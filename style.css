@@ -821,7 +821,7 @@ textarea.form-input { min-height: 78px; resize: vertical; line-height: 1.6; }
 .lyrics-body {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 18px;
-  position: relative; cursor: text; user-select: text; -webkit-user-select: text;
+  position: relative; cursor: default; user-select: none; -webkit-user-select: none;
 }
 @media (min-width: 600px) { .lyrics-body { padding: 28px 32px; } }
 .lyrics-body::before {
@@ -829,37 +829,33 @@ textarea.form-input { min-height: 78px; resize: vertical; line-height: 1.6; }
   font-size: 56px; color: var(--gold); opacity: 0.04;
   font-family: serif; pointer-events: none; line-height: 1;
 }
-.lyric-stanza {
-  font-family: 'Cormorant Garamond', serif; font-style: italic;
-  font-size: 15px; line-height: 1.95; color: var(--cream-dim); margin-bottom: 18px;
-}
-@media (min-width: 600px) { .lyric-stanza { font-size: 17px; margin-bottom: 24px; } }
+.lyric-stanza { margin-bottom: 18px; }
 .lyric-stanza:last-child { margin-bottom: 0; }
-mark.lyric-mark {
-  background: linear-gradient(120deg, rgba(201,168,76,.28), rgba(232,201,122,.18));
-  color: var(--gold2); border-radius: 2px; padding: 1px 3px;
-  box-decoration-break: clone; -webkit-box-decoration-break: clone;
-  border-bottom: 1px solid rgba(201,168,76,.4); font-style: italic;
-}
-.lyrics-body ::selection { background: rgba(201,168,76,.3); color: var(--cream); }
-
-.lyrics-mark-btn {
-  display: block;
+.lyric-spacer { height: 14px; }
+.lyric-line {
+  font-family: 'Cormorant Garamond', serif; font-style: italic;
+  font-size: 15px; line-height: 1.95; color: var(--cream-dim);
+  padding: 4px 8px; border-radius: 4px; cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-left-color 0.15s;
+  border-left: 2px solid transparent;
+  display: inline-block;
   width: 100%;
-  margin-top: 14px;
-  padding: 14px;
-  background: rgba(201,168,76,0.12);
-  border: 1.5px solid var(--gold);
-  border-radius: var(--radius);
-  color: var(--gold);
-  font-family: 'Nunito Sans', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  transition: background 0.2s;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
-.lyrics-mark-btn:active { background: rgba(201,168,76,0.25); }
+@media (min-width: 600px) { .lyric-line { font-size: 17px; } }
+.lyric-line:hover { background: rgba(201,168,76,0.08); color: var(--cream); }
+.lyric-line:active { background: rgba(201,168,76,0.16); }
+.lyric-line-marked {
+  background: linear-gradient(120deg, rgba(201,168,76,.22), rgba(232,201,122,.12));
+  color: var(--gold2);
+  border-left-color: rgba(201,168,76,.6);
+}
+.lyric-line-marked:hover {
+  background: linear-gradient(120deg, rgba(201,168,76,.3), rgba(232,201,122,.18));
+}
 
 .highlights-section { margin-top: 22px; }
 .highlights-title {

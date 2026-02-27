@@ -330,14 +330,10 @@ function openDetail(id) {
           <div class="section-title">Letra <em>da música</em></div>
           <div class="lyrics-tip" id="lyrics-tip-${s.id}">
             <span class="lyrics-tip-icon">✦</span>
-            Selecione um trecho para marcar como favorito
+            Toque em um verso para marcá-lo como favorito
           </div>
         </div>
-        <div class="lyrics-body" id="lyrics-body-${s.id}"
-          onmouseup="handleLyricsSelection('${s.id}')"
-          ontouchend="onLyricsTouchEnd('${s.id}', event)"
-        >${renderLyrics(s.lyrics, s.highlights || [])}</div>
-        <button class="lyrics-mark-btn" id="lyrics-mark-btn-${s.id}" style="display:none" onclick="confirmLyricsSelection('${s.id}')">✦ Marcar trecho selecionado</button>
+        <div class="lyrics-body" id="lyrics-body-${s.id}">${renderLyrics(s.lyrics, s.highlights || [], s.id)}</div>
         ${(s.highlights && s.highlights.length > 0) ? `
         <div class="highlights-section">
           <div class="highlights-title">✦ Trechos <em>marcados</em></div>
@@ -359,96 +355,101 @@ function openDetail(id) {
 }
 
 // ─── LETRAS & HIGHLIGHTS ──────────────────────────────────────
-function renderLyrics(lyrics, highlights) {
+function renderLyrics(lyrics, highlights, songId) {
   if (!lyrics) return '';
-  // Escape HTML
-  let text = lyrics
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
 
-  // Apply highlights (sort by length desc to avoid overlap issues)
-  const sorted = [...highlights].sort((a, b) => b.text.length - a.text.length);
-  sorted.forEach(h => {
-    const escaped = h.text
+  const highlightedTexts = new Set((highlights || []).map(h => normalize(h.text)));
+
+  // Split into lines, group by stanzas (blank line = stanza break)
+  const rawLines = lyrics.split('\n');
+  let html = '';
+  let inStanza = false;
+
+  rawLines.forEach((line, idx) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      // blank line = stanza separator
+      if (inStanza) { html += '</p>'; inStanza = false; }
+      return;
+    }
+    if (!inStanza) { html += '<p class="lyric-stanza">'; inStanza = true; }
+
+    // Escape HTML
+    const escaped = trimmed
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    text = text.replace(new RegExp(escaped, 'g'),
-      `<mark class="lyric-mark">$&</mark>`);
+      .replace(/>/g, '&gt;');
+
+    const isHighlighted = highlightedTexts.has(normalize(trimmed));
+    const songAttr = songId ? ` data-song-id="${songId}"` : '';
+
+    html += `<span class="lyric-line${isHighlighted ? ' lyric-line-marked' : ''}" data-line="${idx}"${songAttr} onclick="toggleVerse(this)">${escaped}</span>`;
   });
 
-  // Line breaks
-  text = text.replace(/\n\n/g, '</p><p class="lyric-stanza">').replace(/\n/g, '<br>');
-  return `<p class="lyric-stanza">${text}</p>`;
+  if (inStanza) html += '</p>';
+  return html;
+}
+
+function toggleVerse(el) {
+  const songId = el.getAttribute('data-song-id');
+  const lineText = el.textContent.trim();
+  const s = songs.find(x => x.id === songId);
+  if (!s) return;
+  if (!s.highlights) s.highlights = [];
+
+  const normLine = normalize(lineText);
+  const existingIdx = s.highlights.findIndex(h => normalize(h.text) === normLine);
+
+  if (existingIdx !== -1) {
+    // Desmarcar
+    s.highlights.splice(existingIdx, 1);
+    el.classList.remove('lyric-line-marked');
+    save();
+    // Atualiza seção de trechos sem re-renderizar tudo
+    refreshHighlightsSection(songId, s);
+    toast('Verso desmarcado', 'O verso foi removido dos seus favoritos.');
+  } else {
+    // Marcar
+    s.highlights.push({ text: lineText, date: new Date().toLocaleDateString('pt-BR') });
+    el.classList.add('lyric-line-marked');
+    save();
+    refreshHighlightsSection(songId, s);
+    toast('✦ Verso marcado!', `"${lineText.slice(0, 40)}${lineText.length > 40 ? '…' : ''}" salvo.`);
+  }
+}
+
+function refreshHighlightsSection(songId, s) {
+  // Find or create highlights section in detail view
+  const lyricsSection = document.querySelector('.lyrics-section');
+  if (!lyricsSection) return;
+
+  let hSection = lyricsSection.querySelector('.highlights-section');
+
+  if (!s.highlights || s.highlights.length === 0) {
+    if (hSection) hSection.remove();
+    return;
+  }
+
+  const hHTML = `
+    <div class="highlights-section">
+      <div class="highlights-title">✦ Trechos <em>marcados</em></div>
+      ${s.highlights.map((h, i) => `
+        <div class="highlight-item">
+          <div class="highlight-quote">${h.text}</div>
+          <button class="highlight-remove" onclick="removeHighlight('${songId}', ${i})" title="Remover">×</button>
+        </div>
+      `).join('')}
+    </div>`;
+
+  if (hSection) {
+    hSection.outerHTML = hHTML;
+  } else {
+    lyricsSection.insertAdjacentHTML('beforeend', hHTML);
+  }
 }
 
 function normalize(str) {
   return str.toLowerCase().replace(/\s+/g, ' ').trim();
-}
-
-function onLyricsTouchEnd(songId, event) {
-  // Espera o browser finalizar a seleção após o touch
-  setTimeout(() => {
-    const selection = window.getSelection();
-    const btn = document.getElementById('lyrics-mark-btn-' + songId);
-    if (!btn) return;
-    if (selection && !selection.isCollapsed && selection.toString().trim().length >= 3) {
-      btn.style.display = 'block';
-    } else {
-      btn.style.display = 'none';
-    }
-  }, 300);
-}
-
-function confirmLyricsSelection(songId) {
-  handleLyricsSelection(songId);
-  const btn = document.getElementById('lyrics-mark-btn-' + songId);
-  if (btn) btn.style.display = 'none';
-}
-
-function handleLyricsSelection(songId) {
-  const selection = window.getSelection();
-  if (!selection || selection.isCollapsed) return;
-  const text = selection.toString().replace(/\s+/g, ' ').trim();
-  if (!text || text.length < 3) return;
-
-  const s = songs.find(x => x.id === songId);
-  if (!s) return;
-
-  if (!s.highlights) s.highlights = [];
-
-  const normNew = normalize(text);
-
-  // Check exact duplicate
-  if (s.highlights.some(h => normalize(h.text) === normNew)) {
-    toast('Já marcado', 'Este trecho já está nos seus favoritos.');
-    selection.removeAllRanges();
-    return;
-  }
-
-  // Check if new text is contained within an existing highlight
-  const containedBy = s.highlights.find(h => normalize(h.text).includes(normNew));
-  if (containedBy) {
-    toast('Já incluído', `Este trecho já faz parte de outro marcado.`);
-    selection.removeAllRanges();
-    return;
-  }
-
-  // Check if new text contains an existing highlight (superstring)
-  const contains = s.highlights.find(h => normNew.includes(normalize(h.text)));
-  if (contains) {
-    toast('Já incluído', `Um trecho menor igual já está marcado.`);
-    selection.removeAllRanges();
-    return;
-  }
-
-  s.highlights.push({ text, date: new Date().toLocaleDateString('pt-BR') });
-  save();
-  toast('✦ Trecho marcado!', `"${text.slice(0, 40)}${text.length > 40 ? '…' : ''}" salvo.`);
-  selection.removeAllRanges();
-  openDetail(songId);
 }
 
 function removeHighlight(songId, index) {
@@ -836,8 +837,16 @@ function toggleShareVerse(idx) {
     shareSelectedVerses.delete(idx);
     document.getElementById('share-verse-' + idx).classList.remove('selected');
   } else {
-    if (shareSelectedVerses.size >= 4) {
-      toast('Máximo atingido', 'Você pode marcar até 4 versos.');
+    if (shareSelectedVerses.size >= 3) {
+      toast('Máximo atingido', 'Você pode marcar até 3 versos.');
+      return;
+    }
+    const currentChars = [...shareSelectedVerses]
+      .map(i => s.highlights[i]?.text || '')
+      .join('').length;
+    const newVerseChars = (s.highlights[idx]?.text || '').length;
+    if (currentChars + newVerseChars > 78) {
+      toast('Limite de caracteres', 'A soma dos versos não pode ultrapassar 78 caracteres.');
       return;
     }
     shareSelectedVerses.add(idx);
@@ -861,391 +870,20 @@ function toggleShareUser() {
   drawStorie();
 }
 
-async function drawStorie() {
-  const s = songs.find(x => x.id === shareSongId);
-  if (!s) return;
-  const canvas = document.getElementById('share-canvas');
-  const ctx = canvas.getContext('2d');
-  const W = 1080, H = 1920;
-  const T = SHARE_THEMES[shareTheme];
-  const PAD = 90; // horizontal padding
+// ─── CANVAS HELPERS ───────────────────────────────────────────
 
-  ctx.clearRect(0, 0, W, H);
-
-  // ── Background ──
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-  bgGrad.addColorStop(0,   T.bg2);
-  bgGrad.addColorStop(0.4, T.bg);
-  bgGrad.addColorStop(1,   T.bg2);
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, W, H);
-
-  // Grain texture
-  ctx.save();
-  ctx.globalAlpha = 0.02;
-  for (let i = 0; i < 5000; i++) {
-    ctx.fillStyle = shareTheme === 'light' ? '#000' : '#fff';
-    ctx.fillRect(Math.random()*W, Math.random()*H, 1.5, 1.5);
-  }
-  ctx.restore();
-
-  // ── TOP BAR: logo left, date right ──
-  const topBarY = 100;
-  ctx.save();
-  ctx.font = 'italic 300 46px "Cormorant Garamond", Georgia, serif';
-  ctx.fillStyle = T.accent;
-  ctx.globalAlpha = 0.5;
-  ctx.textAlign = 'left';
-  ctx.fillText('Melodia.', PAD, topBarY);
-  ctx.globalAlpha = 0.3;
-  ctx.font = '300 30px "Nunito Sans", Arial, sans-serif';
-  ctx.textAlign = 'right';
-  const dateStr = s.date || new Date().toLocaleDateString('pt-BR');
-  ctx.fillText(dateStr, W - PAD, topBarY);
-  ctx.restore();
-
-  // Top accent line
-  ctx.save();
-  const topLine = ctx.createLinearGradient(0, 0, W, 0);
-  topLine.addColorStop(0, 'transparent');
-  topLine.addColorStop(0.25, T.accent);
-  topLine.addColorStop(0.75, T.accent2);
-  topLine.addColorStop(1, 'transparent');
-  ctx.strokeStyle = topLine;
-  ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.moveTo(0, topBarY + 24); ctx.lineTo(W, topBarY + 24); ctx.stroke();
-  ctx.restore();
-
-  // ── VINYL — centered in top half ──
-  const vinylCY = 520;   // center Y of the disc
-  const vinylR  = 290;   // radius — tighter than before
-  await drawVinyl(ctx, W / 2, vinylCY, vinylR, s, T);
-
-  // ── GENRE TAG ──
-  let cursor = vinylCY + vinylR + 70;
-  if (s.genre) {
-    ctx.save();
-    ctx.font = '600 28px "Nunito Sans", Arial, sans-serif';
-    ctx.textAlign = 'center';
-    const tagLabel = s.genre.toUpperCase();
-    const tagW = ctx.measureText(tagLabel).width + 72;
-    const tagH = 56;
-    const tagX = (W - tagW) / 2;
-    roundRect(ctx, tagX, cursor, tagW, tagH, tagH / 2);
-    ctx.fillStyle = T.tag; ctx.fill();
-    ctx.strokeStyle = T.accent; ctx.lineWidth = 1.5;
-    roundRect(ctx, tagX, cursor, tagW, tagH, tagH / 2);
-    ctx.stroke();
-    ctx.fillStyle = T.accent;
-    ctx.fillText(tagLabel, W / 2, cursor + 38);
-    ctx.restore();
-    cursor += tagH + 52;
-  } else {
-    cursor += 20;
-  }
-
-  // ── TITLE ──
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.fillStyle = T.text;
-  let titleSize = 124;
-  const titleText = s.title.toUpperCase();
-  ctx.font = `700 ${titleSize}px "Cormorant Garamond", Georgia, serif`;
-  while (ctx.measureText(titleText).width > W - PAD * 2 && titleSize > 70) {
-    titleSize -= 4;
-    ctx.font = `700 ${titleSize}px "Cormorant Garamond", Georgia, serif`;
-  }
-  // If still too wide, wrap into 2 lines
-  if (ctx.measureText(titleText).width > W - PAD * 2) {
-    const words = titleText.split(' ');
-    const half = Math.ceil(words.length / 2);
-    const line1 = words.slice(0, half).join(' ');
-    const line2 = words.slice(half).join(' ');
-    ctx.fillText(line1, W / 2, cursor + titleSize * 0.85);
-    cursor += titleSize * 0.95;
-    ctx.fillText(line2, W / 2, cursor + titleSize * 0.85);
-    cursor += titleSize * 0.95 + 20;
-  } else {
-    ctx.fillText(titleText, W / 2, cursor + titleSize * 0.85);
-    cursor += titleSize + 20;
-  }
-  ctx.restore();
-
-  // ── ARTIST ──
-  ctx.save();
-  ctx.textAlign = 'center';
-  ctx.fillStyle = T.textDim;
-  let artistSize = 46;
-  const artistLine = s.album ? `${s.artist}  —  ${s.album}` : s.artist;
-  ctx.font = `300 ${artistSize}px "Nunito Sans", Arial, sans-serif`;
-  while (ctx.measureText(artistLine).width > W - PAD * 2 && artistSize > 30) {
-    artistSize -= 2;
-    ctx.font = `300 ${artistSize}px "Nunito Sans", Arial, sans-serif`;
-  }
-  ctx.fillText(artistLine, W / 2, cursor);
-  cursor += artistSize + 16;
-  ctx.restore();
-
-  // ── YEAR ──
-  if (s.year) {
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.fillStyle = T.accent;
-    ctx.globalAlpha = 0.55;
-    ctx.font = '300 34px "Nunito Sans", Arial, sans-serif';
-    ctx.fillText(s.year, W / 2, cursor);
-    cursor += 50;
-    ctx.restore();
-  }
-
-  // ── STARS ──
-  cursor += 24;
-  const starSize = 72;
-  const starGap  = 20;
-  const totalStarW = 5 * starSize + 4 * starGap;
-  let sx = (W - totalStarW) / 2;
-  for (let i = 1; i <= 5; i++) {
-    ctx.save();
-    ctx.font = `${starSize}px Arial`;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = i <= s.rating ? T.accent : T.border;
-    ctx.globalAlpha = i <= s.rating ? 1 : 0.22;
-    ctx.fillText('★', sx, cursor);
-    ctx.restore();
-    sx += starSize + starGap;
-  }
-  cursor += starSize + 56;
-
-  // ── DIVIDER ──
-  ctx.save();
-  const divGrad = ctx.createLinearGradient(0, 0, W, 0);
-  divGrad.addColorStop(0, 'transparent');
-  divGrad.addColorStop(0.15, T.border);
-  divGrad.addColorStop(0.85, T.border);
-  divGrad.addColorStop(1, 'transparent');
-  ctx.strokeStyle = divGrad;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(PAD, cursor); ctx.lineTo(W - PAD, cursor); ctx.stroke();
-  ctx.restore();
-  cursor += 64;
-
-  // ── VERSES / NOTE ──
-  const verses = [...shareSelectedVerses]
-    .sort((a, b) => a - b)
-    .map(i => s.highlights[i]?.text)
-    .filter(Boolean);
-
-  const textContent = verses.length > 0 ? verses : (s.notes ? [`${s.notes}`] : []);
-
-  if (textContent.length > 0) {
-    // Big decorative quote
-    ctx.save();
-    ctx.font = `italic 220px "Cormorant Garamond", Georgia, serif`;
-    ctx.fillStyle = T.accent;
-    ctx.globalAlpha = 0.18;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText('"', PAD - 10, cursor - 30);
-    ctx.restore();
-
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-
-    for (let vi = 0; vi < textContent.length; vi++) {
-      const verse = textContent[vi];
-      ctx.fillStyle = T.text;
-      ctx.globalAlpha = 0.85;
-      ctx.font = `italic 300 52px "Cormorant Garamond", Georgia, serif`;
-      const lines = wrapText(ctx, verse, W - PAD * 2.5, 52);
-      for (const line of lines) {
-        if (cursor > H - 220) break; // safety: never overflow bottom
-        ctx.fillText(line, W / 2, cursor);
-        cursor += 76;
-      }
-      if (vi < textContent.length - 1) {
-        // small separator between verses
-        cursor += 16;
-        ctx.globalAlpha = 0.2;
-        ctx.strokeStyle = T.accent;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(W/2 - 60, cursor); ctx.lineTo(W/2 + 60, cursor);
-        ctx.stroke();
-        cursor += 32;
-      }
-    }
-    ctx.restore();
-  }
-
-  // ── USER PROFILE — pinned above bottom ──
-  if (shareShowUser && (userProfile.name || userProfile.avatar)) {
-    const userY = H - 200;
-    ctx.save();
-
-    // Semi-transparent pill background
-    const pillW = 420, pillH = 90, pillX = (W - pillW) / 2;
-    roundRect(ctx, pillX, userY, pillW, pillH, pillH / 2);
-    ctx.fillStyle = shareTheme === 'light'
-      ? 'rgba(0,0,0,0.06)'
-      : 'rgba(255,255,255,0.06)';
-    ctx.fill();
-    ctx.strokeStyle = T.accent;
-    ctx.globalAlpha = 0.2;
-    ctx.lineWidth = 1.5;
-    roundRect(ctx, pillX, userY, pillW, pillH, pillH / 2);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-
-    // Avatar circle
-    const avatarR = 32;
-    const avatarX = pillX + 28 + avatarR;
-    const avatarCY = userY + pillH / 2;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(avatarX, avatarCY, avatarR, 0, Math.PI * 2);
-    ctx.clip();
-    if (userProfile.avatar) {
-      try {
-        const avatarImg = await loadImage(userProfile.avatar);
-        ctx.drawImage(avatarImg, avatarX - avatarR, avatarCY - avatarR, avatarR * 2, avatarR * 2);
-      } catch {
-        ctx.fillStyle = T.accent;
-        ctx.fill();
-      }
-    } else {
-      // Gradient circle with initial
-      const aGrad = ctx.createRadialGradient(avatarX, avatarCY, 0, avatarX, avatarCY, avatarR);
-      aGrad.addColorStop(0, T.accent + '88');
-      aGrad.addColorStop(1, T.accent + '33');
-      ctx.fillStyle = aGrad;
-      ctx.fill();
-      ctx.font = `600 ${avatarR}px "Nunito Sans", Arial, sans-serif`;
-      ctx.fillStyle = T.text;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText((userProfile.name || '?')[0].toUpperCase(), avatarX, avatarCY);
-    }
-    ctx.restore();
-
-    // Name text
-    if (userProfile.name) {
-      ctx.font = '600 36px "Nunito Sans", Arial, sans-serif';
-      ctx.fillStyle = T.text;
-      ctx.globalAlpha = 0.85;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(userProfile.name, avatarX + avatarR + 22, avatarCY - 8);
-      ctx.font = 'italic 300 26px "Cormorant Garamond", Georgia, serif';
-      ctx.fillStyle = T.accent;
-      ctx.globalAlpha = 0.6;
-      ctx.fillText('no Melodia.', avatarX + avatarR + 22, avatarCY + 26);
-    }
-
-    ctx.restore();
-  }
-
-  // ── BOTTOM BRANDING — always pinned to bottom ──
-  const botY = H - 80;
-  ctx.save();
-  const botLine = ctx.createLinearGradient(0, 0, W, 0);
-  botLine.addColorStop(0, 'transparent');
-  botLine.addColorStop(0.25, T.accent);
-  botLine.addColorStop(0.75, T.accent2);
-  botLine.addColorStop(1, 'transparent');
-  ctx.strokeStyle = botLine;
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(0, botY - 36); ctx.lineTo(W, botY - 36); ctx.stroke();
-  ctx.font = 'italic 300 34px "Cormorant Garamond", Georgia, serif';
-  ctx.fillStyle = T.watermark;
-  ctx.globalAlpha = 0.45;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillText('Melodia — Diário Musical', W / 2, botY);
-  ctx.restore();
-}
-
-async function drawVinyl(ctx, cx, cy, r, song, T) {
-  ctx.save();
-
-  // Outer glow
-  const glowGrad = ctx.createRadialGradient(cx, cy, r*0.85, cx, cy, r*1.15);
-  glowGrad.addColorStop(0, T.accent + '30');
-  glowGrad.addColorStop(1, 'transparent');
-  ctx.fillStyle = glowGrad;
-  ctx.beginPath(); ctx.arc(cx, cy, r*1.15, 0, Math.PI*2); ctx.fill();
-
-  // Main vinyl disc
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
-  const discGrad = ctx.createRadialGradient(cx-r*0.1, cy-r*0.1, 0, cx, cy, r);
-  discGrad.addColorStop(0, '#1e1e1e');
-  discGrad.addColorStop(0.5, '#0d0d0d');
-  discGrad.addColorStop(1, '#080808');
-  ctx.fillStyle = discGrad;
-  ctx.fill();
-
-  // Groove rings
-  for (let i = 0.25; i < 0.92; i += 0.045) {
-    ctx.beginPath();
-    ctx.arc(cx, cy, r * i, 0, Math.PI*2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
-  }
-
-  // Sheen
-  const sheen = ctx.createLinearGradient(cx-r, cy-r, cx+r*0.5, cy+r*0.5);
-  sheen.addColorStop(0, 'rgba(255,255,255,0.07)');
-  sheen.addColorStop(0.4, 'transparent');
-  sheen.addColorStop(0.7, 'rgba(255,255,255,0.02)');
-  sheen.addColorStop(1, 'transparent');
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
-  ctx.fillStyle = sheen; ctx.fill();
-
-  // Center label (art or gradient)
-  const labelR = r * 0.38;
-  const artUrl = song.coverUrl || (song.itunesArt ? song.itunesArt.replace('100x100bb', '600x600bb') : null);
-
-  if (artUrl) {
-    try {
-      const img = await loadImage(artUrl);
-      ctx.save();
-      ctx.beginPath(); ctx.arc(cx, cy, labelR, 0, Math.PI*2); ctx.clip();
-      ctx.drawImage(img, cx-labelR, cy-labelR, labelR*2, labelR*2);
-      ctx.restore();
-    } catch {
-      drawLabelFallback(ctx, cx, cy, labelR, song, T);
-    }
-  } else {
-    drawLabelFallback(ctx, cx, cy, labelR, song, T);
-  }
-
-  // Center hole
-  ctx.beginPath(); ctx.arc(cx, cy, r*0.042, 0, Math.PI*2);
-  ctx.fillStyle = '#000'; ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1.5; ctx.stroke();
-
-  ctx.restore();
-}
-
-function drawLabelFallback(ctx, cx, cy, r, song, T) {
-  ctx.save();
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
-  const labelGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-  labelGrad.addColorStop(0, T.bg2);
-  labelGrad.addColorStop(1, T.bg);
-  ctx.fillStyle = labelGrad; ctx.fill();
-  ctx.strokeStyle = T.accent + '60'; ctx.lineWidth = 2; ctx.stroke();
-  // Emoji
-  const emoji = genreEmoji(song.genre);
-  ctx.font = `${r * 0.7}px Arial`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(emoji, cx, cy);
-  ctx.textBaseline = 'alphabetic';
-  ctx.restore();
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
 function loadImage(url) {
@@ -1275,19 +913,605 @@ function wrapText(ctx, text, maxW, fontSize) {
   return lines;
 }
 
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
+// Fit text into maxW, reducing font until minSize, then truncating with ellipsis
+function fitAutoText(ctx, text, baseFont, maxW, minSize, currentSize) {
+  let size = currentSize;
+  const makeFont = (s) => baseFont.replace(/\d+px/, `${s}px`);
+  ctx.font = makeFont(size);
+  while (ctx.measureText(text).width > maxW && size > minSize) {
+    size -= 2;
+    ctx.font = makeFont(size);
+  }
+  if (ctx.measureText(text).width > maxW) {
+    let t = text;
+    while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    return { text: t + '…', size };
+  }
+  return { text, size };
 }
+
+// Draw multi-line text with auto font reduction, max lines, ellipsis
+function drawAutoText(ctx, text, x, y, maxW, baseFont, startSize, minSize, maxLines, align = 'center', lineH_ratio = 1.3) {
+  let size = startSize;
+  const makeFont = (s) => baseFont.replace(/\d+px/, `${s}px`);
+
+  // Try to find a font size where text wraps within maxLines
+  ctx.font = makeFont(size);
+  let lines = wrapText(ctx, text, maxW, size);
+  while (lines.length > maxLines && size > minSize) {
+    size -= 2;
+    ctx.font = makeFont(size);
+    lines = wrapText(ctx, text, maxW, size);
+  }
+
+  // If still too many lines, truncate last line
+  if (lines.length > maxLines) {
+    lines = lines.slice(0, maxLines);
+    let last = lines[maxLines - 1];
+    while (last.length > 1 && ctx.measureText(last + '…').width > maxW) last = last.slice(0, -1);
+    lines[maxLines - 1] = last + '…';
+  }
+
+  const lineH = size * lineH_ratio;
+  const totalH = lines.length * lineH;
+
+  ctx.font = makeFont(size);
+  ctx.textAlign = align;
+  ctx.textBaseline = 'top';
+
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], x, y + i * lineH);
+  }
+
+  return { lines, size, totalH, lineH };
+}
+
+// ─── MAIN CARD DRAW ───────────────────────────────────────────
+
+async function drawStorie() {
+  const s = songs.find(x => x.id === shareSongId);
+  if (!s) return;
+  const canvas = document.getElementById('share-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = 1080, H = 1920;
+  const T = SHARE_THEMES[shareTheme];
+  const PAD = 88;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // ─────────────────────────────────────────────────────────────
+  // LAYOUT CONSTANTS
+  // ─────────────────────────────────────────────────────────────
+  const INNER_W = W - PAD * 2;
+
+  // ── BACKGROUND ──────────────────────────────────────────────
+  const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+  bgGrad.addColorStop(0,   T.bg2);
+  bgGrad.addColorStop(0.4, T.bg);
+  bgGrad.addColorStop(0.8, T.bg2);
+  bgGrad.addColorStop(1,   T.bg);
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle noise texture
+  ctx.save();
+  ctx.globalAlpha = 0.018;
+  for (let i = 0; i < 5000; i++) {
+    ctx.fillStyle = shareTheme === 'light' ? '#000' : '#fff';
+    ctx.fillRect(Math.random() * W, Math.random() * H, 1.5, 1.5);
+  }
+  ctx.restore();
+
+  // Diagonal vignette
+  ctx.save();
+  const vigGrad = ctx.createRadialGradient(W/2, H*0.4, 0, W/2, H*0.4, W);
+  vigGrad.addColorStop(0, 'transparent');
+  vigGrad.addColorStop(1, 'rgba(0,0,0,0.35)');
+  ctx.fillStyle = vigGrad;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  // ─────────────────────────────────────────────────────────────
+  // ZONE SIZING
+  // ─────────────────────────────────────────────────────────────
+  const verses = [...shareSelectedVerses]
+    .sort((a, b) => a - b)
+    .map(i => s.highlights[i]?.text)
+    .filter(Boolean);
+  const hasVerses = verses.length > 0;
+  const hasUser   = shareShowUser && (userProfile.name || userProfile.avatar);
+
+  // Zone heights (will be used for layout)
+  const TOP_ZONE_H   = 110;  // app name + date
+  const COVER_SIZE   = 560;  // square cover art
+  const INFO_TOP_PAD = 64;   // space between cover and info
+  const FOOTER_H     = hasUser ? 190 : 0;
+
+  // ─────────────────────────────────────────────────────────────
+  // TOP BAR — App name + date
+  // ─────────────────────────────────────────────────────────────
+  const topBarY = 80;
+  ctx.save();
+  ctx.textBaseline = 'alphabetic';
+
+  // App name
+  ctx.font = 'italic 300 46px "Cormorant Garamond", Georgia, serif';
+  ctx.fillStyle = T.accent;
+  ctx.globalAlpha = 0.45;
+  ctx.textAlign = 'left';
+  ctx.fillText('Melodia.', PAD, topBarY);
+
+  // Date
+  ctx.font = '300 26px "Nunito Sans", Arial, sans-serif';
+  ctx.fillStyle = T.textDim;
+  ctx.globalAlpha = 0.4;
+  ctx.textAlign = 'right';
+  ctx.fillText(s.date || new Date().toLocaleDateString('pt-BR'), W - PAD, topBarY);
+  ctx.restore();
+
+  // Top accent line
+  ctx.save();
+  const topLineGrad = ctx.createLinearGradient(0, 0, W, 0);
+  topLineGrad.addColorStop(0, 'transparent');
+  topLineGrad.addColorStop(0.15, T.accent + '88');
+  topLineGrad.addColorStop(0.85, T.accent2 + '88');
+  topLineGrad.addColorStop(1, 'transparent');
+  ctx.strokeStyle = topLineGrad;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, topBarY + 18);
+  ctx.lineTo(W, topBarY + 18);
+  ctx.stroke();
+  ctx.restore();
+
+  // ─────────────────────────────────────────────────────────────
+  // PASS 1 — measure all info-block heights (no drawing yet)
+  // ─────────────────────────────────────────────────────────────
+
+  // Measure title
+  ctx.font = '700 108px "Cormorant Garamond", Georgia, serif';
+  let _titleLines = wrapText(ctx, s.title, INNER_W, 108);
+  let _titleSize  = 108;
+  while (_titleLines.length > 2 && _titleSize > 64) {
+    _titleSize -= 2;
+    ctx.font = `700 ${_titleSize}px "Cormorant Garamond", Georgia, serif`;
+    _titleLines = wrapText(ctx, s.title, INNER_W, _titleSize);
+  }
+  const MEAS_TITLE = _titleLines.length * _titleSize * 1.15;
+
+  // Measure artist
+  ctx.font = '300 46px "Nunito Sans", Arial, sans-serif';
+  const _artistLines = wrapText(ctx, s.artist, INNER_W, 46);
+  const MEAS_ARTIST  = Math.min(_artistLines.length, 2) * 46 * 1.3;
+
+  // Measure album
+  let MEAS_ALBUM = 0;
+  if (s.album) {
+    ctx.font = 'italic 300 36px "Cormorant Garamond", Georgia, serif';
+    const _albumLines = wrapText(ctx, s.album, INNER_W * 0.85, 36);
+    MEAS_ALBUM = Math.min(_albumLines.length, 2) * 36 * 1.3 + 32;
+  } else {
+    MEAS_ALBUM = 16;
+  }
+
+  // Tags row
+  ctx.font = '600 24px "Nunito Sans", Arial, sans-serif';
+  const _tags = [];
+  if (s.genre) _tags.push(s.genre.toUpperCase());
+  if (s.year)  _tags.push(String(s.year));
+  const MEAS_TAGS = _tags.length > 0 ? 50 + 30 : 0;  // TAG_H + gap
+
+  const MEAS_STARS  = 52 + 44;
+  const MEAS_DIVIDER = hasVerses ? 1.2 + 48 : 0;
+
+  // Verse blocks measurement
+  const VERSE_FONT_SIZE = 50;
+  const VERSE_FONT = `italic 300 ${VERSE_FONT_SIZE}px "Cormorant Garamond", Georgia, serif`;
+  const VERSE_MAX_W  = INNER_W - 80;
+  const VERSE_LINE_H = VERSE_FONT_SIZE * 1.4;
+  const VERSE_SEP_H  = 40;
+
+  let verseBlocks = [];
+  let MEAS_VERSES  = 0;
+  if (hasVerses) {
+    ctx.font = VERSE_FONT;
+    verseBlocks = verses.map(v => {
+      let lines = wrapText(ctx, v, VERSE_MAX_W, VERSE_FONT_SIZE);
+      if (lines.length > 3) {
+        lines = lines.slice(0, 3);
+        let last = lines[2];
+        while (last.length > 1 && ctx.measureText(last + '…').width > VERSE_MAX_W) last = last.slice(0, -1);
+        lines[2] = last + '…';
+      }
+      return lines;
+    });
+    verseBlocks.forEach((bl, i) => {
+      MEAS_VERSES += bl.length * VERSE_LINE_H;
+      if (i < verseBlocks.length - 1) MEAS_VERSES += VERSE_SEP_H;
+    });
+    MEAS_VERSES += 60; // breathing room around verse zone
+  }
+
+  // Total content height (cover + gaps + info + verses)
+  const TOP_LINE_Y   = topBarY + 18;     // the accent line below the top bar
+  const CONTENT_TOP  = TOP_LINE_Y + 30;  // first pixel available after top bar
+  const FOOTER_LINE  = hasUser ? H - FOOTER_H : H - 22;  // top of footer zone / bottom line
+
+  const INFO_BLOCK_H = MEAS_TITLE + 28
+                     + MEAS_ARTIST + 10
+                     + MEAS_ALBUM
+                     + MEAS_TAGS
+                     + MEAS_STARS
+                     + MEAS_DIVIDER
+                     + MEAS_VERSES;
+  const TOTAL_H = COVER_SIZE + INFO_TOP_PAD + INFO_BLOCK_H;
+  const ZONE_H  = FOOTER_LINE - CONTENT_TOP;
+
+  // Vertical offset to center everything between top line and footer
+  const offsetY = Math.max(0, Math.round((ZONE_H - TOTAL_H) / 2));
+
+  // ─────────────────────────────────────────────────────────────
+  // PASS 2 — draw everything with the computed offset
+  // ─────────────────────────────────────────────────────────────
+
+  // ── COVER ART ──
+  const coverY  = CONTENT_TOP + offsetY;
+  const coverX  = (W - COVER_SIZE) / 2;
+  const coverR  = 32;
+
+  // Glow behind cover
+  ctx.save();
+  const glowGrad = ctx.createRadialGradient(W/2, coverY + COVER_SIZE/2, 0, W/2, coverY + COVER_SIZE/2, COVER_SIZE * 0.75);
+  glowGrad.addColorStop(0, T.accent + '22');
+  glowGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = glowGrad;
+  ctx.fillRect(0, coverY - 60, W, COVER_SIZE + 120);
+  ctx.restore();
+
+  // Shadow
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 60;
+  ctx.shadowOffsetY = 20;
+  roundRect(ctx, coverX, coverY, COVER_SIZE, COVER_SIZE, coverR);
+  ctx.fillStyle = T.bg;
+  ctx.fill();
+  ctx.restore();
+
+  // Clip and draw cover
+  ctx.save();
+  roundRect(ctx, coverX, coverY, COVER_SIZE, COVER_SIZE, coverR);
+  ctx.clip();
+
+  const artUrl = s.coverUrl || (s.itunesArt ? s.itunesArt.replace('100x100bb', '600x600bb') : null);
+  let coverDrawn = false;
+  if (artUrl) {
+    try {
+      const img = await loadImage(artUrl);
+      ctx.drawImage(img, coverX, coverY, COVER_SIZE, COVER_SIZE);
+      coverDrawn = true;
+    } catch (_) {}
+  }
+  if (!coverDrawn) {
+    const fallGrad = ctx.createLinearGradient(coverX, coverY, coverX + COVER_SIZE, coverY + COVER_SIZE);
+    fallGrad.addColorStop(0, T.bg2);
+    fallGrad.addColorStop(1, T.bg);
+    ctx.fillStyle = fallGrad;
+    ctx.fillRect(coverX, coverY, COVER_SIZE, COVER_SIZE);
+    ctx.font = `${COVER_SIZE * 0.35}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(genreEmoji(s.genre), W/2, coverY + COVER_SIZE/2);
+  }
+
+  roundRect(ctx, coverX, coverY, COVER_SIZE, COVER_SIZE, coverR);
+  ctx.restore();
+  ctx.save();
+  roundRect(ctx, coverX, coverY, COVER_SIZE, COVER_SIZE, coverR);
+  ctx.strokeStyle = T.accent + '28';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
+
+  // ── INFO SECTION ──
+  let cur = coverY + COVER_SIZE + INFO_TOP_PAD;
+
+  // Song title
+  ctx.save();
+  ctx.fillStyle = T.text;
+  ctx.globalAlpha = 1;
+  const { totalH: titleH } = drawAutoText(
+    ctx, s.title, W / 2, cur, INNER_W,
+    '700 108px "Cormorant Garamond", Georgia, serif',
+    108, 64, 2, 'center', 1.15
+  );
+  cur += titleH + 28;
+  ctx.restore();
+
+  // Artist
+  ctx.save();
+  ctx.fillStyle = T.textDim;
+  ctx.globalAlpha = 0.85;
+  const { totalH: artistH } = drawAutoText(
+    ctx, s.artist, W / 2, cur, INNER_W,
+    '300 46px "Nunito Sans", Arial, sans-serif',
+    46, 30, 2, 'center', 1.3
+  );
+  cur += artistH + 10;
+  ctx.restore();
+
+  // Album
+  if (s.album) {
+    ctx.save();
+    ctx.fillStyle = T.textDim;
+    ctx.globalAlpha = 0.55;
+    const { totalH: albumH } = drawAutoText(
+      ctx, s.album, W / 2, cur, INNER_W * 0.85,
+      'italic 300 36px "Cormorant Garamond", Georgia, serif',
+      36, 24, 2, 'center', 1.3
+    );
+    cur += albumH + 32;
+    ctx.restore();
+  } else {
+    cur += 16;
+  }
+
+  // Tags
+  ctx.save();
+  ctx.font = '600 24px "Nunito Sans", Arial, sans-serif';
+  const tags = [];
+  if (s.genre) tags.push(s.genre.toUpperCase());
+  if (s.year)  tags.push(String(s.year));
+  if (tags.length > 0) {
+    const TAG_H = 50, TAG_R = 25, TAG_GAP = 16, TAG_PADX = 36;
+    const tagWidths = tags.map(t => ctx.measureText(t).width + TAG_PADX * 2);
+    const totalTagW = tagWidths.reduce((a, b) => a + b, 0) + (tags.length - 1) * TAG_GAP;
+    let tx = (W - totalTagW) / 2;
+    tags.forEach((label, i) => {
+      const tw = tagWidths[i];
+      roundRect(ctx, tx, cur, tw, TAG_H, TAG_R);
+      ctx.fillStyle = shareTheme === 'light' ? 'rgba(0,0,0,0.04)' : 'rgba(0,0,0,0.28)';
+      ctx.fill();
+      ctx.strokeStyle = T.accent + '66'; ctx.lineWidth = 1;
+      roundRect(ctx, tx, cur, tw, TAG_H, TAG_R);
+      ctx.stroke();
+      ctx.fillStyle = T.accent;
+      ctx.globalAlpha = 0.62;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(label, tx + TAG_PADX, cur + (TAG_H - 24) / 2);
+      ctx.globalAlpha = 1;
+      tx += tw + TAG_GAP;
+    });
+    cur += TAG_H + 30;
+  }
+  ctx.restore();
+
+  // Stars
+  const STAR_SIZE = 52, STAR_GAP = 10;
+  const totalStarW = 5 * STAR_SIZE + 4 * STAR_GAP;
+  let sx = (W - totalStarW) / 2;
+  for (let i = 1; i <= 5; i++) {
+    ctx.save();
+    ctx.font = `${STAR_SIZE}px Arial`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.globalAlpha = i <= s.rating ? 0.92 : 0.15;
+    ctx.fillStyle = i <= s.rating ? T.accent : T.textDim;
+    ctx.fillText('★', sx, cur);
+    ctx.restore();
+    sx += STAR_SIZE + STAR_GAP;
+  }
+  cur += STAR_SIZE + 44;
+
+  // ── DIVIDER (only if verses present) ──
+  if (hasVerses) {
+    ctx.save();
+    const divGrad = ctx.createLinearGradient(0, 0, W, 0);
+    divGrad.addColorStop(0, 'transparent');
+    divGrad.addColorStop(0.12, T.border);
+    divGrad.addColorStop(0.5,  T.accent + '55');
+    divGrad.addColorStop(0.88, T.border);
+    divGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = divGrad;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(PAD, cur); ctx.lineTo(W - PAD, cur); ctx.stroke();
+    ctx.restore();
+    cur += 48;
+  }
+
+  // ── VERSES ──
+  if (hasVerses) {
+    // Available zone for verses: from cur to the footer boundary
+    const VERSE_ZONE_BOT = FOOTER_LINE - (hasUser ? 20 : 0);
+    const VERSE_AVAIL    = VERSE_ZONE_BOT - cur;
+    let vy = cur + Math.max(0, (VERSE_AVAIL - MEAS_VERSES + 60) / 2);
+
+    const VERSE_BLOCK_W = INNER_W - 80;
+    const VERSE_COL_X   = (W - VERSE_BLOCK_W) / 2;
+    const BAR_W = 3, BAR_GAP = 22;
+    const TEXT_X = VERSE_COL_X + BAR_W + BAR_GAP;
+
+    // Decorative quote mark
+    ctx.save();
+    ctx.font = `italic 200px "Cormorant Garamond", Georgia, serif`;
+    ctx.fillStyle = T.accent;
+    ctx.globalAlpha = 0.10;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('"', VERSE_COL_X - 6, vy - 40);
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = VERSE_FONT;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    verseBlocks.forEach((lines, vi) => {
+      const blockH = lines.length * VERSE_LINE_H;
+
+      ctx.save();
+      roundRect(ctx, VERSE_COL_X, vy - 14, VERSE_BLOCK_W, blockH + 28, 12);
+      ctx.fillStyle = shareTheme === 'light' ? 'rgba(0,0,0,0.055)' : 'rgba(255,255,255,0.065)';
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = T.accent;
+      ctx.globalAlpha = 0.55;
+      roundRect(ctx, VERSE_COL_X, vy - 2, BAR_W, blockH + 4, BAR_W / 2);
+      ctx.fill();
+      ctx.restore();
+
+      lines.forEach((line, li) => {
+        ctx.fillStyle = T.text;
+        ctx.globalAlpha = 0.88;
+        ctx.fillText(line, TEXT_X, vy + li * VERSE_LINE_H);
+      });
+      vy += blockH;
+
+      if (vi < verseBlocks.length - 1) {
+        vy += 16;
+        ctx.save();
+        ctx.globalAlpha = 0.18;
+        ctx.strokeStyle = T.accent;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 7]);
+        ctx.beginPath();
+        ctx.moveTo(TEXT_X, vy); ctx.lineTo(VERSE_COL_X + VERSE_BLOCK_W, vy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+        vy += VERSE_SEP_H - 16;
+      }
+    });
+    ctx.restore();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // FOOTER — user profile pill
+  // ─────────────────────────────────────────────────────────────
+  if (hasUser) {
+    const PILL_H = 100;
+
+    // The two bounding lines of the footer zone:
+    // — top separator line (same as drawn in DIVIDER section logic, fixed here)
+    const LINE_TOP = H - FOOTER_H;          // where the top separator will be drawn
+    const LINE_BOT = H - 22;                // bottom accent line (drawn at the very end)
+    const ZONE_MID = (LINE_TOP + LINE_BOT) / 2;  // true midpoint between both lines
+    const pillY    = Math.round(ZONE_MID - PILL_H / 2);  // pill vertically centered in zone
+
+    // Horizontal accent line — top of footer zone
+    ctx.save();
+    const footLineGrad = ctx.createLinearGradient(0, 0, W, 0);
+    footLineGrad.addColorStop(0, 'transparent');
+    footLineGrad.addColorStop(0.2, T.accent + '33');
+    footLineGrad.addColorStop(0.8, T.accent + '33');
+    footLineGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = footLineGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, LINE_TOP); ctx.lineTo(W, LINE_TOP); ctx.stroke();
+    ctx.restore();
+
+    // ── Optical centering ──────────────────────────────────────
+    // Measure the text block so we can calculate true content width
+    // and position the whole group so it reads as visually centered,
+    // not just mathematically centered (the avatar circle pulls left).
+    const AVA_R    = 36;
+    const AVA_GAP  = 24;          // gap between avatar edge and text
+    const NAME_SIZE = 34, SUB_SIZE = 28;
+
+    ctx.font = `600 ${NAME_SIZE}px "Nunito Sans", Arial, sans-serif`;
+    const nameW = userProfile.name ? ctx.measureText(userProfile.name).width : 0;
+    ctx.font = `italic 300 ${SUB_SIZE}px "Cormorant Garamond", Georgia, serif`;
+    const subW  = ctx.measureText('no Melodia.').width;
+    const textBlockW = Math.max(nameW, subW);
+
+    // Total content width: avatar diameter + gap + text block
+    const contentW = AVA_R * 2 + AVA_GAP + textBlockW;
+
+    // Optical offset: shift the whole group +8px right to compensate
+    // for the visual weight of the circular avatar on the left side.
+    const OPTICAL_SHIFT = 8;
+    const groupX = Math.round((W - contentW) / 2) + OPTICAL_SHIFT;
+
+    const AVA_CX = groupX + AVA_R;         // avatar center X
+    const AVA_CY = pillY + PILL_H / 2;     // avatar center Y (vertical middle of pill)
+    const TEXT_X = groupX + AVA_R * 2 + AVA_GAP;  // where text starts
+
+    // Size pill to snugly wrap the content with balanced horizontal padding
+    const PILL_PAD_H = 36;   // horizontal padding each side
+    const PILL_W_OPT = contentW + PILL_PAD_H * 2;
+    const pillXOpt   = Math.round((W - PILL_W_OPT) / 2);
+
+    ctx.save();
+    roundRect(ctx, pillXOpt, pillY, PILL_W_OPT, PILL_H, PILL_H / 2);
+    ctx.fillStyle = shareTheme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)';
+    ctx.fill();
+    ctx.strokeStyle = T.accent;
+    ctx.globalAlpha = 0.18;
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, pillXOpt, pillY, PILL_W_OPT, PILL_H, PILL_H / 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Avatar clip & fill
+    ctx.save();
+    ctx.beginPath(); ctx.arc(AVA_CX, AVA_CY, AVA_R, 0, Math.PI * 2); ctx.clip();
+    if (userProfile.avatar) {
+      try {
+        const avatarImg = await loadImage(userProfile.avatar);
+        ctx.drawImage(avatarImg, AVA_CX - AVA_R, AVA_CY - AVA_R, AVA_R * 2, AVA_R * 2);
+      } catch {
+        ctx.fillStyle = T.accent; ctx.fill();
+      }
+    } else {
+      const aGrad = ctx.createRadialGradient(AVA_CX, AVA_CY, 0, AVA_CX, AVA_CY, AVA_R);
+      aGrad.addColorStop(0, T.accent + '99'); aGrad.addColorStop(1, T.accent + '33');
+      ctx.fillStyle = aGrad; ctx.fill();
+      ctx.font = `600 ${AVA_R}px "Nunito Sans", Arial, sans-serif`;
+      ctx.fillStyle = T.bg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText((userProfile.name || '?')[0].toUpperCase(), AVA_CX, AVA_CY);
+    }
+    ctx.restore();
+
+    // Avatar ring
+    ctx.save();
+    ctx.strokeStyle = T.accent; ctx.lineWidth = 2; ctx.globalAlpha = 0.3;
+    ctx.beginPath(); ctx.arc(AVA_CX, AVA_CY, AVA_R + 3, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+
+    // Text: name + subtitle
+    if (userProfile.name) {
+      // Name — primary, strong
+      ctx.font = `600 ${NAME_SIZE}px "Nunito Sans", Arial, sans-serif`;
+      ctx.fillStyle = T.text; ctx.globalAlpha = 0.90;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText(userProfile.name, TEXT_X, AVA_CY - 12);
+
+      // "no Melodia." — secondary, present but not competing
+      ctx.font = `italic 300 ${SUB_SIZE}px "Cormorant Garamond", Georgia, serif`;
+      ctx.fillStyle = T.accent; ctx.globalAlpha = 0.72;  // up from 0.55
+      ctx.fillText('no Melodia.', TEXT_X, AVA_CY + 22);
+    }
+    ctx.restore();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // BOTTOM ACCENT LINE
+  // ─────────────────────────────────────────────────────────────
+  ctx.save();
+  const botLineGrad = ctx.createLinearGradient(0, 0, W, 0);
+  botLineGrad.addColorStop(0, 'transparent');
+  botLineGrad.addColorStop(0.2, T.accent + '55');
+  botLineGrad.addColorStop(0.8, T.accent2 + '55');
+  botLineGrad.addColorStop(1, 'transparent');
+  ctx.strokeStyle = botLineGrad;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, H - 22); ctx.lineTo(W, H - 22); ctx.stroke();
+  ctx.restore();
+}
+
 
 function downloadStorie() {
   const canvas = document.getElementById('share-canvas');
