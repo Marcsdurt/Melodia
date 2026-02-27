@@ -843,6 +843,24 @@ mark.lyric-mark {
 }
 .lyrics-body ::selection { background: rgba(201,168,76,.3); color: var(--cream); }
 
+.lyrics-mark-btn {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 14px;
+  background: rgba(201,168,76,0.12);
+  border: 1.5px solid var(--gold);
+  border-radius: var(--radius);
+  color: var(--gold);
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.lyrics-mark-btn:active { background: rgba(201,168,76,0.25); }
+
 .highlights-section { margin-top: 22px; }
 .highlights-title {
   font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;

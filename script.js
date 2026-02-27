@@ -333,7 +333,11 @@ function openDetail(id) {
             Selecione um trecho para marcar como favorito
           </div>
         </div>
-        <div class="lyrics-body" id="lyrics-body-${s.id}" onmouseup="handleLyricsSelection('${s.id}')" ontouchend="setTimeout(()=>handleLyricsSelection('${s.id}'),100)">${renderLyrics(s.lyrics, s.highlights || [])}</div>
+        <div class="lyrics-body" id="lyrics-body-${s.id}"
+          onmouseup="handleLyricsSelection('${s.id}')"
+          ontouchend="onLyricsTouchEnd('${s.id}', event)"
+        >${renderLyrics(s.lyrics, s.highlights || [])}</div>
+        <button class="lyrics-mark-btn" id="lyrics-mark-btn-${s.id}" style="display:none" onclick="confirmLyricsSelection('${s.id}')">✦ Marcar trecho selecionado</button>
         ${(s.highlights && s.highlights.length > 0) ? `
         <div class="highlights-section">
           <div class="highlights-title">✦ Trechos <em>marcados</em></div>
@@ -382,6 +386,26 @@ function renderLyrics(lyrics, highlights) {
 
 function normalize(str) {
   return str.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function onLyricsTouchEnd(songId, event) {
+  // Espera o browser finalizar a seleção após o touch
+  setTimeout(() => {
+    const selection = window.getSelection();
+    const btn = document.getElementById('lyrics-mark-btn-' + songId);
+    if (!btn) return;
+    if (selection && !selection.isCollapsed && selection.toString().trim().length >= 3) {
+      btn.style.display = 'block';
+    } else {
+      btn.style.display = 'none';
+    }
+  }, 300);
+}
+
+function confirmLyricsSelection(songId) {
+  handleLyricsSelection(songId);
+  const btn = document.getElementById('lyrics-mark-btn-' + songId);
+  if (btn) btn.style.display = 'none';
 }
 
 function handleLyricsSelection(songId) {
