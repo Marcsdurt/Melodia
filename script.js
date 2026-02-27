@@ -333,7 +333,7 @@ function openDetail(id) {
             Selecione um trecho para marcar como favorito
           </div>
         </div>
-        <div class="lyrics-body" id="lyrics-body-${s.id}" onmouseup="handleLyricsSelection('${s.id}')">${renderLyrics(s.lyrics, s.highlights || [])}</div>
+        <div class="lyrics-body" id="lyrics-body-${s.id}" onmouseup="handleLyricsSelection('${s.id}')" ontouchend="setTimeout(()=>handleLyricsSelection('${s.id}'),100)">${renderLyrics(s.lyrics, s.highlights || [])}</div>
         ${(s.highlights && s.highlights.length > 0) ? `
         <div class="highlights-section">
           <div class="highlights-title">✦ Trechos <em>marcados</em></div>
@@ -812,16 +812,8 @@ function toggleShareVerse(idx) {
     shareSelectedVerses.delete(idx);
     document.getElementById('share-verse-' + idx).classList.remove('selected');
   } else {
-    if (shareSelectedVerses.size >= 3) {
-      toast('Máximo atingido', 'Você pode marcar até 3 versos.');
-      return;
-    }
-    const currentChars = [...shareSelectedVerses]
-      .map(i => s.highlights[i]?.text || '')
-      .join('').length;
-    const newVerseChars = (s.highlights[idx]?.text || '').length;
-    if (currentChars + newVerseChars > 78) {
-      toast('Limite de caracteres', 'A soma dos versos não pode ultrapassar 78 caracteres.');
+    if (shareSelectedVerses.size >= 4) {
+      toast('Máximo atingido', 'Você pode marcar até 4 versos.');
       return;
     }
     shareSelectedVerses.add(idx);
@@ -1012,73 +1004,50 @@ async function drawStorie() {
   ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(PAD, cursor); ctx.lineTo(W - PAD, cursor); ctx.stroke();
   ctx.restore();
+  cursor += 64;
 
-  const dividerY = cursor;
-
-  // ── Configurações fixas ──
-  const PILL_H  = 90;
-  const PILL_W  = 420;
-  const PILL_BOT = 160;          // distância do pill ao fundo
-  const pillY   = H - PILL_BOT; // posição Y fixa do pill
-
-  // ── VERSES centralizados entre divisor e pill ──
+  // ── VERSES / NOTE ──
   const verses = [...shareSelectedVerses]
     .sort((a, b) => a - b)
     .map(i => s.highlights[i]?.text)
     .filter(Boolean);
+
   const textContent = verses.length > 0 ? verses : (s.notes ? [`${s.notes}`] : []);
 
-  const FONT_SIZE = 52;
-  const LINE_H    = 76;
-
-  ctx.font = `italic 300 ${FONT_SIZE}px "Cormorant Garamond", Georgia, serif`;
-  const verseLinesArr = textContent.map(t => wrapText(ctx, t, W - PAD * 2.5, FONT_SIZE));
-
-  // Altura total dos versos
-  let versesH = 0;
-  for (let vi = 0; vi < verseLinesArr.length; vi++) {
-    versesH += verseLinesArr[vi].length * LINE_H;
-    if (vi < verseLinesArr.length - 1) versesH += 16 + 32;
-  }
-
-  // Espaço disponível entre divisor e topo do pill
-  const hasUser = shareShowUser && (userProfile.name || userProfile.avatar);
-  const zoneTop    = dividerY + 40;
-  const zoneBottom = hasUser ? pillY - 40 : H - 80;
-  const zoneH      = zoneBottom - zoneTop;
-
-  // Centralizar versos verticalmente nessa zona
-  cursor = zoneTop + Math.max(0, (zoneH - versesH) / 2);
-
-  if (verseLinesArr.length > 0) {
+  if (textContent.length > 0) {
+    // Big decorative quote
     ctx.save();
     ctx.font = `italic 220px "Cormorant Garamond", Georgia, serif`;
     ctx.fillStyle = T.accent;
     ctx.globalAlpha = 0.18;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('"', PAD - 10, cursor - 20);
+    ctx.fillText('"', PAD - 10, cursor - 30);
     ctx.restore();
 
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.font = `italic 300 ${FONT_SIZE}px "Cormorant Garamond", Georgia, serif`;
 
-    for (let vi = 0; vi < verseLinesArr.length; vi++) {
+    for (let vi = 0; vi < textContent.length; vi++) {
+      const verse = textContent[vi];
       ctx.fillStyle = T.text;
       ctx.globalAlpha = 0.85;
-      for (const line of verseLinesArr[vi]) {
+      ctx.font = `italic 300 52px "Cormorant Garamond", Georgia, serif`;
+      const lines = wrapText(ctx, verse, W - PAD * 2.5, 52);
+      for (const line of lines) {
+        if (cursor > H - 220) break; // safety: never overflow bottom
         ctx.fillText(line, W / 2, cursor);
-        cursor += LINE_H;
+        cursor += 76;
       }
-      if (vi < verseLinesArr.length - 1) {
+      if (vi < textContent.length - 1) {
+        // small separator between verses
         cursor += 16;
         ctx.globalAlpha = 0.2;
         ctx.strokeStyle = T.accent;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(W / 2 - 60, cursor); ctx.lineTo(W / 2 + 60, cursor);
+        ctx.moveTo(W/2 - 60, cursor); ctx.lineTo(W/2 + 60, cursor);
         ctx.stroke();
         cursor += 32;
       }
@@ -1086,25 +1055,29 @@ async function drawStorie() {
     ctx.restore();
   }
 
-  // ── USER PROFILE — fixo perto do rodapé ──
-  if (hasUser) {
-    const pillX   = (W - PILL_W) / 2;
-    const userY   = pillY;
+  // ── USER PROFILE — pinned above bottom ──
+  if (shareShowUser && (userProfile.name || userProfile.avatar)) {
+    const userY = H - 200;
     ctx.save();
 
-    roundRect(ctx, pillX, userY, PILL_W, PILL_H, PILL_H / 2);
-    ctx.fillStyle = shareTheme === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)';
+    // Semi-transparent pill background
+    const pillW = 420, pillH = 90, pillX = (W - pillW) / 2;
+    roundRect(ctx, pillX, userY, pillW, pillH, pillH / 2);
+    ctx.fillStyle = shareTheme === 'light'
+      ? 'rgba(0,0,0,0.06)'
+      : 'rgba(255,255,255,0.06)';
     ctx.fill();
     ctx.strokeStyle = T.accent;
     ctx.globalAlpha = 0.2;
     ctx.lineWidth = 1.5;
-    roundRect(ctx, pillX, userY, PILL_W, PILL_H, PILL_H / 2);
+    roundRect(ctx, pillX, userY, pillW, pillH, pillH / 2);
     ctx.stroke();
     ctx.globalAlpha = 1;
 
-    const avatarR  = 32;
-    const avatarX  = pillX + 28 + avatarR;
-    const avatarCY = userY + PILL_H / 2;
+    // Avatar circle
+    const avatarR = 32;
+    const avatarX = pillX + 28 + avatarR;
+    const avatarCY = userY + pillH / 2;
 
     ctx.save();
     ctx.beginPath();
@@ -1115,13 +1088,16 @@ async function drawStorie() {
         const avatarImg = await loadImage(userProfile.avatar);
         ctx.drawImage(avatarImg, avatarX - avatarR, avatarCY - avatarR, avatarR * 2, avatarR * 2);
       } catch {
-        ctx.fillStyle = T.accent; ctx.fill();
+        ctx.fillStyle = T.accent;
+        ctx.fill();
       }
     } else {
+      // Gradient circle with initial
       const aGrad = ctx.createRadialGradient(avatarX, avatarCY, 0, avatarX, avatarCY, avatarR);
       aGrad.addColorStop(0, T.accent + '88');
       aGrad.addColorStop(1, T.accent + '33');
-      ctx.fillStyle = aGrad; ctx.fill();
+      ctx.fillStyle = aGrad;
+      ctx.fill();
       ctx.font = `600 ${avatarR}px "Nunito Sans", Arial, sans-serif`;
       ctx.fillStyle = T.text;
       ctx.textAlign = 'center';
@@ -1130,6 +1106,7 @@ async function drawStorie() {
     }
     ctx.restore();
 
+    // Name text
     if (userProfile.name) {
       ctx.font = '600 36px "Nunito Sans", Arial, sans-serif';
       ctx.fillStyle = T.text;
@@ -1142,8 +1119,28 @@ async function drawStorie() {
       ctx.globalAlpha = 0.6;
       ctx.fillText('no Melodia.', avatarX + avatarR + 22, avatarCY + 26);
     }
+
     ctx.restore();
   }
+
+  // ── BOTTOM BRANDING — always pinned to bottom ──
+  const botY = H - 80;
+  ctx.save();
+  const botLine = ctx.createLinearGradient(0, 0, W, 0);
+  botLine.addColorStop(0, 'transparent');
+  botLine.addColorStop(0.25, T.accent);
+  botLine.addColorStop(0.75, T.accent2);
+  botLine.addColorStop(1, 'transparent');
+  ctx.strokeStyle = botLine;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, botY - 36); ctx.lineTo(W, botY - 36); ctx.stroke();
+  ctx.font = 'italic 300 34px "Cormorant Garamond", Georgia, serif';
+  ctx.fillStyle = T.watermark;
+  ctx.globalAlpha = 0.45;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText('Melodia — Diário Musical', W / 2, botY);
+  ctx.restore();
 }
 
 async function drawVinyl(ctx, cx, cy, r, song, T) {
