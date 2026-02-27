@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0e0c09">
+  <title>Melodia — Seu Diário Musical</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Nunito+Sans:wght@300;400;600&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ─── SIDEBAR OVERLAY (mobile) ─── -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- ─── SIDEBAR ─── -->
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-mark">Melodia<span>.</span></div>
+    <div class="logo-sub">Diário Musical</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Principal</div>
+    <div class="nav-item active" data-view="home" onclick="navigate('home');closeSidebar()">
+      <span class="nav-icon">◈</span> Início
+    </div>
+    <div class="nav-item" data-view="songs" onclick="navigate('songs');closeSidebar()">
+      <span class="nav-icon">♪</span> Músicas
+      <span class="nav-badge" id="badge-songs">0</span>
+    </div>
+    <div class="nav-item" data-view="playlists" onclick="navigate('playlists');closeSidebar()">
+      <span class="nav-icon">⊞</span> Playlists
+      <span class="nav-badge" id="badge-playlists">0</span>
+    </div>
+    <div class="nav-label">Explorar</div>
+    <div class="nav-item" data-view="favorites" onclick="navigate('favorites');closeSidebar()">
+      <span class="nav-icon">★</span> Favoritas
+    </div>
+    <div class="nav-item" data-view="notes" onclick="navigate('notes');closeSidebar()">
+      <span class="nav-icon">✎</span> Minhas Notas
+    </div>
+    <div class="nav-label">Conta</div>
+    <div class="nav-item" data-view="settings" onclick="navigate('settings');closeSidebar()">
+      <span class="nav-icon">⚙</span> Configurações
+    </div>
+  </nav>
+  <div class="sidebar-user" onclick="navigate('settings');closeSidebar()">
+    <div class="sidebar-avatar" id="sidebar-avatar">♪</div>
+    <div class="sidebar-user-info">
+      <div class="sidebar-user-name" id="sidebar-user-name">Meu Perfil</div>
+      <div class="sidebar-user-sub">Configurações</div>
+    </div>
+    <span style="color:var(--cream-faint);font-size:12px">›</span>
+  </div>
+</aside>
+
+<!-- ─── MAIN ─── -->
+<main class="main">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <button class="hamburger" onclick="openSidebar()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <h1 class="topbar-title" id="topbar-title">Início</h1>
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="search-input" placeholder="Buscar…" oninput="handleSearch()">
+    </div>
+    <button class="btn btn-primary" onclick="openAddModal()">+ Adicionar</button>
+  </header>
+
+  <div class="content">
+
+    <!-- HOME -->
+    <div class="view active" id="view-home">
+      <div class="banner">
+        <div class="banner-greeting">Bem-vindo ao seu espaço</div>
+        <div class="banner-title">Seu diário musical pessoal</div>
+        <div class="banner-desc">Anote o que você sentiu, organize por playlists, dê notas e deixe suas memórias musicais sempre à mão. Sem complicação.</div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num" id="stat-total">0</div><div class="stat-label">Músicas</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-playlists">0</div><div class="stat-label">Playlists</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-notes">0</div><div class="stat-label">Anotações</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-avg">—</div><div class="stat-label">Nota Média</div></div>
+      </div>
+      <div class="section-head">
+        <div class="section-title">Adicionadas <em>recentemente</em></div>
+        <span class="section-link" onclick="navigate('songs')">Ver todas →</span>
+      </div>
+      <div class="song-grid" id="recent-grid"></div>
+    </div>
+
+    <!-- SONGS -->
+    <div class="view" id="view-songs">
+      <div class="section-head" style="margin-bottom:24px">
+        <div class="section-title">Todas as <em>músicas</em></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div class="view-toggle">
+            <button class="vt-btn active" id="vt-grid" onclick="setSongView('grid')" title="Grade">⊞</button>
+            <button class="vt-btn" id="vt-list" onclick="setSongView('list')" title="Lista">☰</button>
+          </div>
+          <button class="btn btn-primary" onclick="openAddModal()">+ Adicionar</button>
+        </div>
+      </div>
+      <div id="songs-container"></div>
+    </div>
+
+    <!-- PLAYLISTS -->
+    <div class="view" id="view-playlists">
+      <div class="section-head" style="margin-bottom:24px">
+        <div class="section-title">Minhas <em>playlists</em></div>
+        <button class="btn btn-primary" onclick="openPlaylistModal()">+ Nova Playlist</button>
+      </div>
+      <div class="playlist-grid" id="playlists-grid"></div>
+    </div>
+
+    <!-- FAVORITAS -->
+    <div class="view" id="view-favorites">
+      <div class="section-head" style="margin-bottom:24px">
+        <div class="section-title">Músicas <em>favoritas</em></div>
+      </div>
+      <div class="song-grid" id="favorites-grid"></div>
+    </div>
+
+    <!-- NOTAS -->
+    <div class="view" id="view-notes">
+      <div class="section-head" style="margin-bottom:24px">
+        <div class="section-title">Minhas <em>anotações</em></div>
+      </div>
+      <div id="notes-container"></div>
+    </div>
+
+    <!-- DETALHE -->
+    <div class="view" id="view-detail">
+      <button class="back-btn" onclick="backFromDetail()">← Voltar</button>
+      <div id="detail-content"></div>
+    </div>
+
+    <!-- CONFIGURAÇÕES -->
+    <div class="view" id="view-settings">
+      <div id="settings-content"></div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- ─── BOTTOM NAV (mobile) ─── -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-item active" data-bnview="home" onclick="navigate('home')">
+      <span class="bn-icon">◈</span>
+      <span>Início</span>
+    </div>
+    <div class="bottom-nav-item" data-bnview="songs" onclick="navigate('songs')">
+      <span class="bn-icon">♪</span>
+      <span>Músicas</span>
+    </div>
+    <div class="bottom-nav-item" data-bnview="playlists" onclick="navigate('playlists')">
+      <span class="bn-icon">⊞</span>
+      <span>Playlists</span>
+    </div>
+    <div class="bottom-nav-item" data-bnview="favorites" onclick="navigate('favorites')">
+      <span class="bn-icon">★</span>
+      <span>Favoritas</span>
+    </div>
+    <div class="bottom-nav-item" data-bnview="settings" onclick="navigate('settings')">
+      <span class="bn-icon">⚙</span>
+      <span>Config.</span>
+    </div>
+  </nav>
+
+</main>
+
+<!-- ─── MODAL: ADICIONAR MÚSICA ─── -->
+<div class="modal-backdrop" id="modal-add">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-add-title">Registrar Música</div>
+        <div class="modal-title-sub">Busque na biblioteca ou preencha manualmente</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-add')">×</button>
+    </div>
+
+    <!-- BUSCA NA BIBLIOTECA -->
+    <div class="modal-search-zone" id="modal-search-zone">
+      <div class="search-api-wrap">
+        <span class="search-icon">⌕</span>
+        <input
+          type="text"
+          id="api-search-input"
+          class="search-api-input"
+          placeholder="Buscar músicas, artistas ou álbuns na biblioteca…"
+          oninput="debounceApiSearch()"
+          autocomplete="off"
+        >
+        <span class="search-api-spinner" id="api-spinner">↻</span>
+      </div>
+      <div id="api-results" class="api-results"></div>
+    </div>
+
+    <!-- DIVISOR -->
+    <div class="modal-divider" id="modal-divider">
+      <span>ou preencha manualmente</span>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-row two">
+        <div>
+          <label class="form-label">Título da Música *</label>
+          <input class="form-input" id="f-title" placeholder="ex: Clair de Lune">
+        </div>
+        <div>
+          <label class="form-label">Artista *</label>
+          <input class="form-input" id="f-artist" placeholder="ex: Claude Debussy">
+        </div>
+      </div>
+      <div class="form-row two">
+        <div>
+          <label class="form-label">Álbum</label>
+          <input class="form-input" id="f-album" placeholder="ex: Suite bergamasque">
+        </div>
+        <div>
+          <label class="form-label">Ano</label>
+          <input class="form-input" id="f-year" type="number" placeholder="ex: 1890" min="1500" max="2030">
+        </div>
+      </div>
+      <div class="form-row two">
+        <div>
+          <label class="form-label">Gênero</label>
+          <select class="form-input" id="f-genre">
+            <option value="">— Selecionar —</option>
+            <option>Clássica</option>
+            <option>Jazz</option>
+            <option>Rock</option>
+            <option>Pop</option>
+            <option>MPB</option>
+            <option>Samba</option>
+            <option>Bossa Nova</option>
+            <option>Eletrônica</option>
+            <option>Soul / R&B</option>
+            <option>Hip-Hop</option>
+            <option>Folk</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Playlist</label>
+          <select class="form-input" id="f-playlist">
+            <option value="">— Nenhuma —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Capa da Música</label>
+        <div class="cover-upload-zone" id="cover-upload-zone">
+          <input type="file" accept="image/*" onchange="handleCoverUpload(event)">
+          <img id="cover-preview" class="cover-upload-preview" style="display:none" src="" alt="">
+          <div class="cover-upload-label">Clique ou arraste uma foto da capa</div>
+          <div class="cover-upload-hint">JPG, PNG, WEBP • ou use a arte obtida pela busca</div>
+        </div>
+        <input type="hidden" id="f-itunes-art">
+        <input type="hidden" id="f-cover-url">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Sua Nota</label>
+        <div class="star-picker" id="star-picker">
+          <span class="star-pick" data-v="1" onclick="setRating(1)">★</span>
+          <span class="star-pick" data-v="2" onclick="setRating(2)">★</span>
+          <span class="star-pick" data-v="3" onclick="setRating(3)">★</span>
+          <span class="star-pick" data-v="4" onclick="setRating(4)">★</span>
+          <span class="star-pick" data-v="5" onclick="setRating(5)">★</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Letra da Música</label>
+        <textarea class="form-input" id="f-lyrics" placeholder="Cole aqui a letra da música para poder marcar seus trechos favoritos…" style="min-height:140px;font-style:italic;line-height:1.8"></textarea>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Anotações & Sentimentos</label>
+        <textarea class="form-input" id="f-notes" placeholder="O que essa música faz você sentir? Onde você a ouviu? Que memória ela traz?"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveSong()">Salvar Música</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: NOVA PLAYLIST ─── -->
+<div class="modal-backdrop" id="modal-playlist">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Nova Playlist</div>
+        <div class="modal-title-sub">Crie uma coleção temática</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-playlist')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row two">
+        <div>
+          <label class="form-label">Emoji</label>
+          <input class="form-input" id="p-emoji" placeholder="🎸" maxlength="4">
+        </div>
+        <div>
+          <label class="form-label">Nome *</label>
+          <input class="form-input" id="p-name" placeholder="ex: Para os dias de chuva">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Descrição</label>
+        <textarea class="form-input" id="p-desc" placeholder="Descreva o clima ou tema desta playlist…" style="min-height:70px"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-playlist')">Cancelar</button>
+      <button class="btn btn-primary" onclick="savePlaylist()">Criar Playlist</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODAL: COMPARTILHAR ─── -->
+<div class="modal-backdrop" id="modal-share">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Compartilhar Música</div>
+        <div class="modal-title-sub">Gere uma imagem para o seu Stories</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modal-share')">×</button>
+    </div>
+    <div class="modal-body" style="padding-bottom:0">
+
+      <!-- Preview do storie -->
+      <div class="share-preview-wrap">
+        <canvas id="share-canvas" width="1080" height="1920"></canvas>
+      </div>
+
+      <!-- Controles -->
+      <div class="share-controls">
+
+        <!-- Seleção de versos -->
+        <div id="share-verses-section" style="display:none">
+          <div class="share-control-label">✦ Escolha até 4 versos para aparecer na imagem</div>
+          <div class="share-verses-list" id="share-verses-list"></div>
+        </div>
+
+        <!-- Tema de cor -->
+        <div class="share-control-label" style="margin-top:18px">Tema</div>
+        <div class="share-themes">
+          <button class="share-theme-btn active" data-theme="dark" onclick="setShareTheme('dark')">
+            <span class="theme-dot" style="background:#0e0c09;border:1px solid #c9a84c"></span> Escuro
+          </button>
+          <button class="share-theme-btn" data-theme="gold" onclick="setShareTheme('gold')">
+            <span class="theme-dot" style="background:#c9a84c"></span> Dourado
+          </button>
+          <button class="share-theme-btn" data-theme="light" onclick="setShareTheme('light')">
+            <span class="theme-dot" style="background:#f5f0e8;border:1px solid #ccc"></span> Claro
+          </button>
+          <button class="share-theme-btn" data-theme="night" onclick="setShareTheme('night')">
+            <span class="theme-dot" style="background:#0a0a1a;border:1px solid #6060ff"></span> Noite
+          </button>
+        </div>
+
+        <!-- Exibir usuário -->
+        <div id="share-user-section" style="display:none;margin-top:18px">
+          <div class="share-control-label">Exibir no Stories</div>
+          <label class="settings-toggle-row" style="cursor:pointer" onclick="toggleShareUser()">
+            <div>
+              <div style="font-size:13px;color:var(--cream)">Mostrar meu perfil</div>
+              <div style="font-size:11px;color:var(--cream-dim)">Foto e nome aparecem na imagem</div>
+            </div>
+            <div class="settings-toggle" id="share-user-toggle"></div>
+          </label>
+        </div>
+
+      </div>
+    </div>
+    <div class="modal-footer" style="padding-top:20px">
+      <button class="btn btn-ghost" onclick="closeModal('modal-share')">Fechar</button>
+      <button class="btn btn-primary" onclick="downloadStorie()">↓ Baixar Imagem</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TOAST ─── -->
+<div class="toast" id="toast">
+  <div class="toast-title" id="toast-title"></div>
+  <div id="toast-msg"></div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
