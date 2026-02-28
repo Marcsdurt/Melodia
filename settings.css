@@ -1,0 +1,214 @@
+/* ═══════════════════════════════════════════════════════════════
+   MELODIA — SETTINGS
+   Página de configurações: perfil, aparência, dados, danger zone
+   ═══════════════════════════════════════════════════════════════ */
+
+.settings-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+.settings-section {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.settings-section-title {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 16px 20px 10px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Nunito Sans', sans-serif;
+  font-weight: 600;
+}
+
+.settings-danger { border-color: rgba(196,92,74,0.3); }
+.settings-danger .settings-section-title { color: var(--red); }
+
+/* Avatar row */
+.settings-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+}
+
+.settings-avatar-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.settings-avatar-wrap:hover { border-color: var(--gold); }
+
+.settings-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.settings-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, var(--surface2), var(--bg3));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  color: var(--gold2);
+}
+
+.settings-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 50%;
+}
+.settings-avatar-wrap:hover .settings-avatar-overlay { opacity: 1; }
+
+/* Toggle row */
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.settings-toggle-row:last-child { border-bottom: none; }
+.settings-toggle-row:hover { background: var(--gold-dim); }
+
+.settings-row-label {
+  font-size: 14px;
+  color: var(--cream);
+  font-weight: 400;
+  margin-bottom: 2px;
+}
+.settings-row-sub {
+  font-size: 11px;
+  color: var(--cream-dim);
+  line-height: 1.4;
+}
+
+/* Toggle switch */
+.settings-toggle {
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--border);
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.25s;
+  cursor: pointer;
+}
+.settings-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--cream-dim);
+  transition: transform 0.25s, background 0.25s;
+}
+.settings-toggle.on { background: var(--gold); }
+.settings-toggle.on::after {
+  transform: translateX(18px);
+  background: var(--bg);
+}
+
+.settings-arrow {
+  font-size: 18px;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+/* Font size slider */
+.settings-font-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 20px 4px;
+}
+
+.settings-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.settings-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.settings-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--gold);
+  cursor: pointer;
+  border: none;
+}
+
+/* Settings footer */
+.settings-footer {
+  text-align: center;
+  padding: 36px 20px 20px;
+  color: var(--cream-faint);
+}
+.settings-footer-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--gold2);
+  opacity: 0.5;
+  margin-bottom: 4px;
+}
+.settings-footer-logo span { font-style: italic; font-weight: 300; }
+.settings-footer-version {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+.settings-footer-quote {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px;
+  font-style: italic;
+  opacity: 0.35;
+  line-height: 1.6;
+  max-width: 300px;
+  margin: 0 auto;
+}
