@@ -244,23 +244,32 @@ function renderFeed() {
   const recent = [...songs].reverse().slice(0, 15);
   const events = buildFeedEvents(recent);
 
-  // Group events by relative day
-  const groups = {};
+  // Group by date string (DD/MM/YYYY) para garantir ordem correta
+  const groupsByDate = {};
   events.forEach(ev => {
-    const key = relativeTime(ev.date) || 'há algum tempo';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(ev);
+    const key = ev.date || '00/00/0000';
+    if (!groupsByDate[key]) groupsByDate[key] = [];
+    groupsByDate[key].push(ev);
+  });
+
+  // Ordenar datas: mais recente primeiro
+  const sortedDates = Object.keys(groupsByDate).sort((a, b) => {
+    const toTs = d => {
+      const p = d.split('/');
+      return p.length === 3 ? new Date(+p[2], +p[1]-1, +p[0]).getTime() : 0;
+    };
+    return toTs(b) - toTs(a);
   });
 
   let html = '';
-  let dayIndex = 0;
-  Object.entries(groups).forEach(([day, evs]) => {
+  sortedDates.forEach((date, dayIndex) => {
+    const evs = groupsByDate[date];
+    const label = relativeTime(date) || 'há algum tempo';
     const isAlt = dayIndex % 2 === 1;
     html += `<div class="feed-day-group${isAlt ? ' feed-day-alt' : ''}">`;
-    html += `<div class="feed-day-label">${day}</div>`;
+    html += `<div class="feed-day-label">${label}</div>`;
     evs.forEach((ev, i) => { html += feedEventHTML(ev, i === evs.length - 1); });
     html += `</div>`;
-    dayIndex++;
   });
 
   c.innerHTML = html;
