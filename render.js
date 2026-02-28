@@ -304,11 +304,10 @@ function renderDiary(filter) {
           <div class="diary-row-line"></div>
           <div class="diary-row-body">
             <div class="diary-row-title">${s.title}</div>
-            <div class="diary-row-artist">${s.artist}${s.album ? ` · ${s.album}` : ''}</div>
-            ${s.notes ? `<div class="diary-row-note">${s.notes.slice(0,80)}${s.notes.length>80?'…':''}</div>` : ''}
+            <div class="diary-row-artist"><span class="diary-row-artist-text">${s.artist}${s.album ? ` · ${s.album}` : ''}</span>${s.genre ? `<span class="diary-row-genre">· ${s.genre}</span>` : ''}</div>
+            ${s.notes ? `<div class="diary-row-note">${s.notes}</div>` : ''}
           </div>
           <div class="diary-row-right">
-            ${s.genre ? `<span class="song-genre">${s.genre}</span>` : ''}
             ${s.rating ? `<span class="diary-row-rating">${starsHTML(s.rating)}</span>` : ''}
           </div>
         </div>`;
@@ -348,14 +347,45 @@ function renderLibrary() {
   const noted = songs.filter(s => s.notes);
   let html = '';
 
-  html += `<div class="section-head"><div class="section-title">Minhas <em>playlists</em></div><button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="openPlaylistModal()">+ Nova</button></div>`;
+  // Playlists — mais recente à esquerda
+  const sortedPlaylists = [...playlists].reverse();
+  const PLAYLIST_PREVIEW = 6; // quantas mostrar no carrossel antes de "ver todas"
+  const showAll = window._libraryShowAllPlaylists || false;
+
+  html += `
+    <div class="section-head">
+      <div class="section-title">Minhas <em>playlists</em></div>
+      <div style="display:flex;gap:14px;align-items:center">
+        ${playlists.length > 0 ? `<button class="playlist-see-all-btn" onclick="toggleLibraryPlaylists()">${showAll ? 'Recolher' : 'Ver todas'}</button>` : ''}
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 11px" onclick="openPlaylistModal()">+ Nova</button>
+      </div>
+    </div>`;
+
   if (playlists.length === 0) {
     html += `<div class="library-empty-section" onclick="openPlaylistModal()"><span>⊞</span> Criar primeira playlist</div>`;
-  } else {
-    html += `<div class="playlist-grid" style="margin-bottom:32px">` +
-      playlists.map(p => {
+  } else if (showAll) {
+    // Grade expandida — todas as playlists
+    html += `<div class="playlist-grid playlist-grid-expanded" style="margin-bottom:32px">` +
+      sortedPlaylists.map(p => {
         const count = songs.filter(s => s.playlistId === p.id).length;
-        return `<div class="playlist-card" onclick="showPlaylist('${p.id}')"><div class="playlist-emoji">${p.emoji||'🎵'}</div><div class="playlist-name">${p.name}</div><div class="playlist-desc">${p.desc||'Sem descrição.'}</div><div class="playlist-count">${count} música${count!==1?'s':''}</div></div>`;
+        return `<div class="playlist-card" onclick="showPlaylist('${p.id}')">
+          <div class="playlist-emoji">${p.emoji||'🎵'}</div>
+          <div class="playlist-name">${p.name}</div>
+          <div class="playlist-desc">${p.desc||'Sem descrição.'}</div>
+          <div class="playlist-count">${count} música${count!==1?'s':''}</div>
+        </div>`;
+      }).join('') + `</div>`;
+  } else {
+    // Carrossel horizontal — mais recentes à esquerda
+    html += `<div class="playlist-carousel" id="playlist-carousel" style="margin-bottom:32px">` +
+      sortedPlaylists.map(p => {
+        const count = songs.filter(s => s.playlistId === p.id).length;
+        return `<div class="playlist-card" onclick="showPlaylist('${p.id}')">
+          <div class="playlist-emoji">${p.emoji||'🎵'}</div>
+          <div class="playlist-name">${p.name}</div>
+          <div class="playlist-desc">${p.desc||'Sem descrição.'}</div>
+          <div class="playlist-count">${count} música${count!==1?'s':''}</div>
+        </div>`;
       }).join('') + `</div>`;
   }
 
@@ -376,6 +406,7 @@ function renderLibrary() {
     });
   }
   c.innerHTML = html;
+  setTimeout(initCarouselDrag, 0);
 }
 
 // ─── PERFIL ───────────────────────────────────────────────────
@@ -483,9 +514,22 @@ function openDetail(id) {
         </div>
         <div class="detail-stars">${starsHTML(s.rating, 'detail-star')}</div>
         <div class="detail-actions">
-          <button class="btn btn-ghost" onclick="editSong('${s.id}')">✎ Editar</button>
-          <button class="btn btn-primary" onclick="openShareModal('${s.id}')">↗ Compartilhar</button>
-          <button class="btn btn-ghost" style="color:var(--red);border-color:var(--red)" onclick="deleteSong('${s.id}')">✕ Remover</button>
+          <button class="detail-icon-btn" onclick="editSong('${s.id}')" title="Editar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span>Editar</span>
+          </button>
+          <button class="detail-icon-btn" onclick="openShareModal('${s.id}')" title="Compartilhar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            <span>Compartilhar</span>
+          </button>
+          <button class="detail-icon-btn" onclick="addToPlaylistPrompt('${s.id}')" title="Adicionar à playlist">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/><circle cx="19" cy="19" r="3" fill="var(--bg2)" stroke="currentColor"/><line x1="19" y1="17.5" x2="19" y2="20.5"/><line x1="17.5" y1="19" x2="20.5" y2="19"/></svg>
+            <span>Playlist</span>
+          </button>
+          <button class="detail-icon-btn detail-icon-btn-danger" onclick="deleteSong('${s.id}')" title="Remover">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            <span>Remover</span>
+          </button>
         </div>
       </div>
     </div>

@@ -7,7 +7,14 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0e0c09">
-  <title>Melodia — Seu Diário Musical</title>
+  <title>Melodia</title>
+  <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/android-chrome-512x512.png">
+  <link rel="manifest" href="icons/site.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Nunito+Sans:wght@300;400;600&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
@@ -195,11 +202,131 @@
           <label class="form-label">Gênero</label>
           <select class="form-input" id="f-genre">
             <option value="">— Selecionar —</option>
-            <option>Clássica</option><option>Jazz</option><option>Rock</option>
-            <option>Pop</option><option>MPB</option><option>Samba</option>
-            <option>Bossa Nova</option><option>Eletrônica</option>
-            <option>Soul / R&amp;B</option><option>Hip-Hop</option>
-            <option>Folk</option><option>Outro</option>
+            <optgroup label="Rock">
+              <option>Rock</option>
+              <option>Alternative Rock</option>
+              <option>Indie Rock</option>
+              <option>Hard Rock</option>
+              <option>Punk Rock</option>
+              <option>Progressive Rock</option>
+              <option>Post-Rock</option>
+              <option>Grunge</option>
+              <option>Shoegaze</option>
+              <option>Emo</option>
+              <option>Garage Rock</option>
+              <option>Punk</option>
+              <option>Blues Rock</option>
+            </optgroup>
+            <optgroup label="Pop">
+              <option>Pop</option>
+              <option>Indie Pop</option>
+              <option>Synthpop</option>
+              <option>Electropop</option>
+              <option>Dream Pop</option>
+              <option>Dance Pop</option>
+              <option>Teen Pop</option>
+              <option>Art Pop</option>
+              <option>K-Pop</option>
+            </optgroup>
+            <optgroup label="Hip Hop &amp; Rap">
+              <option>Hip Hop</option>
+              <option>Rap</option>
+              <option>Trap</option>
+              <option>Boom Bap</option>
+              <option>Drill</option>
+              <option>Conscious Rap</option>
+              <option>Cloud Rap</option>
+              <option>Lo-fi Hip Hop</option>
+              <option>Gangsta Rap</option>
+              <option>Alternative Hip Hop</option>
+            </optgroup>
+            <optgroup label="R&amp;B &amp; Soul">
+              <option>R&amp;B</option>
+              <option>Contemporary R&amp;B</option>
+              <option>Soul</option>
+              <option>Neo Soul</option>
+              <option>Quiet Storm</option>
+              <option>Funk</option>
+              <option>Disco</option>
+            </optgroup>
+            <optgroup label="Electronic">
+              <option>Electronic</option>
+              <option>House</option>
+              <option>Deep House</option>
+              <option>Tech House</option>
+              <option>Techno</option>
+              <option>Minimal Techno</option>
+              <option>Trance</option>
+              <option>Drum and Bass</option>
+              <option>Dubstep</option>
+              <option>Ambient</option>
+              <option>Synthwave</option>
+              <option>Hyperpop</option>
+              <option>Future Bass</option>
+            </optgroup>
+            <optgroup label="Metal">
+              <option>Metal</option>
+              <option>Heavy Metal</option>
+              <option>Thrash Metal</option>
+              <option>Death Metal</option>
+              <option>Black Metal</option>
+              <option>Metalcore</option>
+              <option>Doom Metal</option>
+              <option>Progressive Metal</option>
+              <option>Nu Metal</option>
+            </optgroup>
+            <optgroup label="Jazz">
+              <option>Jazz</option>
+              <option>Bebop</option>
+              <option>Swing</option>
+              <option>Smooth Jazz</option>
+              <option>Jazz Fusion</option>
+              <option>Modal Jazz</option>
+              <option>Free Jazz</option>
+            </optgroup>
+            <optgroup label="Blues">
+              <option>Blues</option>
+              <option>Delta Blues</option>
+              <option>Chicago Blues</option>
+              <option>Electric Blues</option>
+            </optgroup>
+            <optgroup label="Classical">
+              <option>Classical</option>
+              <option>Baroque</option>
+              <option>Romantic</option>
+              <option>Contemporary Classical</option>
+              <option>Minimalism</option>
+              <option>Orchestral</option>
+            </optgroup>
+            <optgroup label="Latin">
+              <option>Latin</option>
+              <option>Reggaeton</option>
+              <option>Salsa</option>
+              <option>Bachata</option>
+              <option>Merengue</option>
+              <option>Cumbia</option>
+              <option>Latin Pop</option>
+              <option>Samba</option>
+              <option>Bossa Nova</option>
+            </optgroup>
+            <optgroup label="Folk &amp; Country">
+              <option>Folk</option>
+              <option>Indie Folk</option>
+              <option>Folk Rock</option>
+              <option>Americana</option>
+              <option>Contemporary Folk</option>
+              <option>Country</option>
+              <option>Country Pop</option>
+              <option>Country Rock</option>
+              <option>Bluegrass</option>
+              <option>Outlaw Country</option>
+            </optgroup>
+            <optgroup label="Outros">
+              <option>Reggae</option>
+              <option>Gospel</option>
+              <option>World Music</option>
+              <option>Experimental</option>
+            </optgroup>
           </select>
         </div>
         <div>

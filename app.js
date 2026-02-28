@@ -234,3 +234,46 @@ applyFontSize(userProfile.fontSize || 100);
 updateSidebarUser();
 renderView('feed');
 navigate('feed');
+
+// ─── PLAYLIST CAROUSEL ───────────────────────────────────────
+window._libraryShowAllPlaylists = false;
+
+function toggleLibraryPlaylists() {
+  window._libraryShowAllPlaylists = !window._libraryShowAllPlaylists;
+  renderLibrary();
+  // Re-init drag after re-render
+  setTimeout(initCarouselDrag, 50);
+}
+
+function initCarouselDrag() {
+  const el = document.getElementById('playlist-carousel');
+  if (!el) return;
+  let isDown = false, startX, scrollLeft, hasDragged = false;
+
+  el.addEventListener('mousedown', e => {
+    isDown = true;
+    hasDragged = false;
+    el.classList.add('dragging');
+    startX = e.pageX - el.offsetLeft;
+    scrollLeft = el.scrollLeft;
+  });
+  el.addEventListener('mouseleave', () => { isDown = false; el.classList.remove('dragging'); });
+  el.addEventListener('mouseup', () => { isDown = false; el.classList.remove('dragging'); });
+  el.addEventListener('mousemove', e => {
+    if (!isDown) return;
+    const x = e.pageX - el.offsetLeft;
+    const walk = x - startX;
+    if (Math.abs(walk) > 5) {
+      hasDragged = true;
+      e.preventDefault();
+      el.scrollLeft = scrollLeft - walk * 1.4;
+    }
+  });
+  // Se não arrastou, deixa o click propagar normalmente
+  el.addEventListener('click', e => {
+    if (hasDragged) e.stopPropagation();
+  }, true);
+}
+
+// Init on first load if library is default view
+document.addEventListener('DOMContentLoaded', () => setTimeout(initCarouselDrag, 200));

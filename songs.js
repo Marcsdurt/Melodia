@@ -213,12 +213,89 @@ function saveSong() {
 function deleteSong(id) {
   const s = songs.find(x => x.id === id);
   if (!s) return;
-  if (!confirm(`Remover "${s.title}" do seu diário?`)) return;
+
+  const existing = document.getElementById('delete-prompt');
+  if (existing) existing.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'delete-prompt';
+  popup.className = 'playlist-prompt-overlay';
+  popup.innerHTML = `
+    <div class="playlist-prompt-box" style="padding-bottom:16px">
+      <div class="playlist-prompt-title">Remover música</div>
+      <div style="text-align:center;padding:6px 24px 20px;font-size:13px;color:var(--cream-dim);line-height:1.6">
+        Tem certeza que quer remover<br><strong style="color:var(--cream)">"${s.title}"</strong> do seu diário?
+      </div>
+      <div style="display:flex;gap:10px;padding:0 16px">
+        <button class="playlist-prompt-cancel" style="margin:0;flex:1" onclick="document.getElementById('delete-prompt').remove()">Cancelar</button>
+        <button class="playlist-prompt-cancel" style="margin:0;flex:1;background:rgba(196,92,74,0.15);color:var(--red);border:1px solid rgba(196,92,74,0.3)" onclick="confirmDeleteSong('${id}')">Remover</button>
+      </div>
+    </div>`;
+  popup.addEventListener('click', e => { if (e.target === popup) popup.remove(); });
+  document.body.appendChild(popup);
+}
+
+function confirmDeleteSong(id) {
+  const s = songs.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('delete-prompt')?.remove();
   songs = songs.filter(x => x.id !== id);
   save();
   toast('Removido', `"${s.title}" foi removido.`);
   navigate(previousView);
 }
+
+function addToPlaylistPrompt(id) {
+  const s = songs.find(x => x.id === id);
+  if (!s) return;
+
+  if (playlists.length === 0) {
+    toast('Sem playlists', 'Crie uma playlist primeiro na Biblioteca.');
+    return;
+  }
+
+  // Criar popup inline
+  const existing = document.getElementById('playlist-prompt');
+  if (existing) existing.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'playlist-prompt';
+  popup.className = 'playlist-prompt-overlay';
+  popup.innerHTML = `
+    <div class="playlist-prompt-box">
+      <div class="playlist-prompt-title">Adicionar à playlist</div>
+      <div class="playlist-prompt-list">
+        ${playlists.map(p => {
+          const active = s.playlistId === p.id;
+          return `<div class="playlist-prompt-item${active ? ' active' : ''}" onclick="assignPlaylist('${id}','${p.id}')">
+            <span class="playlist-prompt-emoji">${p.emoji||'🎵'}</span>
+            <span class="playlist-prompt-name">${p.name}</span>
+            ${active ? '<span class="playlist-prompt-check">✓</span>' : ''}
+          </div>`;
+        }).join('')}
+        ${s.playlistId ? `<div class="playlist-prompt-item playlist-prompt-remove" onclick="assignPlaylist('${id}','')">
+          <span class="playlist-prompt-emoji">✕</span>
+          <span class="playlist-prompt-name">Remover da playlist</span>
+        </div>` : ''}
+      </div>
+      <button class="playlist-prompt-cancel" onclick="document.getElementById('playlist-prompt').remove()">Cancelar</button>
+    </div>`;
+  popup.addEventListener('click', e => { if (e.target === popup) popup.remove(); });
+  document.body.appendChild(popup);
+}
+
+function assignPlaylist(songId, playlistId) {
+  const s = songs.find(x => x.id === songId);
+  if (!s) return;
+  s.playlistId = playlistId || null;
+  save();
+  document.getElementById('playlist-prompt')?.remove();
+  const pl = playlists.find(p => p.id === playlistId);
+  toast('Playlist', pl ? `Adicionado a "${pl.name}"` : 'Removido da playlist');
+  openDetail(songId); // re-render detail
+}
+
+
 
 // ─── PLAYLISTS ────────────────────────────────────────────────
 function openPlaylistModal() {
@@ -317,18 +394,108 @@ async function searchItunes(query) {
 }
 
 function mapItunesGenre(g) {
-  if (!g) return 'Outro';
-  const map = {
-    'Classical': 'Clássica', 'Jazz': 'Jazz', 'Rock': 'Rock', 'Pop': 'Pop',
-    'Hip-Hop/Rap': 'Hip-Hop', 'Electronic': 'Eletrônica', 'Dance': 'Eletrônica',
-    'R&B/Soul': 'Soul / R&B', 'Soul': 'Soul / R&B', 'Folk': 'Folk',
-    'World': 'MPB', 'Brazilian': 'MPB', 'Samba': 'Samba', 'Bossa Nova': 'Bossa Nova',
-    'Alternative': 'Rock', 'Singer/Songwriter': 'Folk',
-  };
-  for (const key of Object.keys(map)) {
-    if (g.toLowerCase().includes(key.toLowerCase())) return map[key];
+  if (!g) return '';
+  const gl = g.toLowerCase();
+  if (gl.includes('hip-hop') || gl.includes('hip hop') || gl.includes('rap')) {
+    if (gl.includes('alternative')) return 'Alternative Hip Hop';
+    if (gl.includes('conscious'))   return 'Conscious Rap';
+    if (gl.includes('trap'))        return 'Trap';
+    return 'Hip Hop';
   }
-  return 'Outro';
+  if (gl.includes('r&b') || gl.includes('rhythm')) {
+    if (gl.includes('contemporary')) return 'Contemporary R&B';
+    return 'R&B';
+  }
+  if (gl.includes('soul'))   return 'Soul';
+  if (gl.includes('funk'))   return 'Funk';
+  if (gl.includes('disco'))  return 'Disco';
+  if (gl.includes('electronic') || gl.includes('electronica') || gl.includes('dance')) {
+    if (gl.includes('ambient'))   return 'Ambient';
+    if (gl.includes('house'))     return 'House';
+    if (gl.includes('techno'))    return 'Techno';
+    if (gl.includes('trance'))    return 'Trance';
+    if (gl.includes('drum'))      return 'Drum and Bass';
+    if (gl.includes('dubstep'))   return 'Dubstep';
+    if (gl.includes('synth'))     return 'Synthwave';
+    return 'Electronic';
+  }
+  if (gl.includes('classical') || gl.includes('clássica')) {
+    if (gl.includes('baroque'))      return 'Baroque';
+    if (gl.includes('romantic'))     return 'Romantic';
+    if (gl.includes('orchestral'))   return 'Orchestral';
+    if (gl.includes('contemporary')) return 'Contemporary Classical';
+    return 'Classical';
+  }
+  if (gl.includes('jazz')) {
+    if (gl.includes('smooth'))  return 'Smooth Jazz';
+    if (gl.includes('fusion'))  return 'Jazz Fusion';
+    if (gl.includes('bebop'))   return 'Bebop';
+    if (gl.includes('swing'))   return 'Swing';
+    return 'Jazz';
+  }
+  if (gl.includes('blues')) {
+    if (gl.includes('rock'))    return 'Blues Rock';
+    if (gl.includes('chicago')) return 'Chicago Blues';
+    if (gl.includes('delta'))   return 'Delta Blues';
+    return 'Blues';
+  }
+  if (gl.includes('metal')) {
+    if (gl.includes('heavy'))       return 'Heavy Metal';
+    if (gl.includes('thrash'))      return 'Thrash Metal';
+    if (gl.includes('death'))       return 'Death Metal';
+    if (gl.includes('black'))       return 'Black Metal';
+    if (gl.includes('core'))        return 'Metalcore';
+    if (gl.includes('doom'))        return 'Doom Metal';
+    if (gl.includes('progressive')) return 'Progressive Metal';
+    if (gl.includes('nu'))          return 'Nu Metal';
+    return 'Metal';
+  }
+  if (gl.includes('rock')) {
+    if (gl.includes('alternative')) return 'Alternative Rock';
+    if (gl.includes('indie'))       return 'Indie Rock';
+    if (gl.includes('hard'))        return 'Hard Rock';
+    if (gl.includes('punk'))        return 'Punk Rock';
+    if (gl.includes('progressive')) return 'Progressive Rock';
+    if (gl.includes('post'))        return 'Post-Rock';
+    if (gl.includes('grunge'))      return 'Grunge';
+    if (gl.includes('garage'))      return 'Garage Rock';
+    if (gl.includes('folk'))        return 'Folk Rock';
+    if (gl.includes('country'))     return 'Country Rock';
+    return 'Rock';
+  }
+  if (gl.includes('pop')) {
+    if (gl.includes('indie'))    return 'Indie Pop';
+    if (gl.includes('synth'))    return 'Synthpop';
+    if (gl.includes('electro'))  return 'Electropop';
+    if (gl.includes('dream'))    return 'Dream Pop';
+    if (gl.includes('dance'))    return 'Dance Pop';
+    if (gl.includes('k-pop') || gl.includes('korean')) return 'K-Pop';
+    if (gl.includes('latin'))    return 'Latin Pop';
+    if (gl.includes('country'))  return 'Country Pop';
+    if (gl.includes('art'))      return 'Art Pop';
+    return 'Pop';
+  }
+  if (gl.includes('country')) {
+    if (gl.includes('bluegrass')) return 'Bluegrass';
+    if (gl.includes('outlaw'))    return 'Outlaw Country';
+    return 'Country';
+  }
+  if (gl.includes('folk') || gl.includes('singer')) {
+    if (gl.includes('indie'))  return 'Indie Folk';
+    if (gl.includes('americana')) return 'Americana';
+    return 'Folk';
+  }
+  if (gl.includes('punk')) return 'Punk';
+  if (gl.includes('reggaeton'))            return 'Reggaeton';
+  if (gl.includes('latin') || gl.includes('salsa') || gl.includes('bachata') || gl.includes('cumbia')) return 'Latin';
+  if (gl.includes('samba'))                return 'Samba';
+  if (gl.includes('bossa'))                return 'Bossa Nova';
+  if (gl.includes('reggae'))               return 'Reggae';
+  if (gl.includes('gospel') || gl.includes('christian')) return 'Gospel';
+  if (gl.includes('world') || gl.includes('brazilian') || gl.includes('afro')) return 'World Music';
+  if (gl.includes('ambient'))              return 'Ambient';
+  if (gl.includes('experimental'))         return 'Experimental';
+  return '';
 }
 
 function selectApiResult(idx, track) {
