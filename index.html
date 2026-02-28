@@ -8,6 +8,63 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0e0c09">
   <title>Melodia</title>
+
+  <!-- Splash screen: cor de fundo e nome do app -->
+  <meta name="apple-mobile-web-app-title" content="Melodia">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="msapplication-TileColor" content="#0e0c09">
+
+  <!-- Splash inline — aparece antes do CSS carregar -->
+  <style>
+    #splash {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #0e0c09;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 18px;
+      transition: opacity 0.4s ease;
+    }
+    #splash.hidden { opacity: 0; pointer-events: none; }
+    #splash-vinyl {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: radial-gradient(circle at 38% 38%, #2c2820, #0e0c09);
+      border: 2px solid #3a3428;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+      animation: splashSpin 3s linear infinite;
+    }
+    #splash-vinyl::before {
+      content: '';
+      position: absolute; inset: 10px;
+      border-radius: 50%;
+      border: 1px solid #3a3428;
+    }
+    #splash-vinyl::after {
+      content: '';
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #c9a84c;
+      position: absolute;
+    }
+    #splash-name {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 28px; font-weight: 400;
+      letter-spacing: 0.18em;
+      color: #f0e8d8;
+      text-transform: uppercase;
+    }
+    #splash-sub {
+      font-family: Georgia, serif;
+      font-size: 11px; letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(201,168,76,0.7);
+      margin-top: -12px;
+    }
+    @keyframes splashSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+  </style>
   <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
   <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
@@ -23,6 +80,13 @@
   <link rel="stylesheet" href="settings.css">
 </head>
 <body>
+
+  <!-- Splash screen -->
+  <div id="splash">
+    <div id="splash-vinyl"></div>
+    <div id="splash-name">Melodia</div>
+    <div id="splash-sub">Diário Musical</div>
+  </div>
 
 <!-- ─── SIDEBAR OVERLAY (mobile) ─── -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
@@ -476,5 +540,16 @@
 <script src="share.js"></script>
 <script src="app.js"></script>
 
+  <script>
+    // Remove splash após app inicializar
+    window.addEventListener('load', () => {
+      const splash = document.getElementById('splash');
+      if (!splash) return;
+      setTimeout(() => {
+        splash.classList.add('hidden');
+        setTimeout(() => splash.remove(), 420);
+      }, 600); // mínimo 600ms para a splash ser vista
+    });
+  </script>
 </body>
 </html>
