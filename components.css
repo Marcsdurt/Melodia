@@ -296,7 +296,45 @@
 .playlist-card:hover  { border-color: var(--gold); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.4); }
 .playlist-card:active { transform: translateY(0); }
 
-.playlist-emoji { font-size: 22px; line-height: 1; }
+.playlist-detail-cover {
+  width: 72px; height: 72px; border-radius: 50%;
+  flex-shrink: 0; cursor: pointer; position: relative;
+  border: 2px solid var(--border); overflow: hidden;
+  transition: border-color 0.2s;
+}
+.playlist-detail-cover:hover { border-color: var(--gold); }
+.playlist-detail-cover-edit {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--cream); opacity: 0;
+  transition: opacity 0.2s;
+}
+.playlist-detail-cover:hover .playlist-detail-cover-edit { opacity: 1; }
+.playlist-img-upload {
+  width: 58px; height: 58px; border-radius: 50%;
+  background: var(--surface2); border: 2px dashed var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; overflow: hidden;
+  transition: border-color 0.2s;
+  font-size: 20px; color: var(--cream-faint);
+  -webkit-tap-highlight-color: transparent;
+}
+.playlist-img-upload:hover { border-color: var(--gold); color: var(--gold); }
+.playlist-img-upload:has(img[style*="block"]) { border-style: solid; border-color: var(--border); }
+
+.playlist-cover {
+  width: 44px; height: 44px; border-radius: 50%;
+  object-fit: cover; flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+.playlist-cover-placeholder {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--surface2); display: flex;
+  align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+  border: 1px solid var(--border);
+}
 .playlist-name  {
   font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;

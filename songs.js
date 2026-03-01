@@ -284,6 +284,61 @@ function addToPlaylistPrompt(id) {
   document.body.appendChild(popup);
 }
 
+function editPlaylistImg() {
+  document.getElementById('playlist-img-edit-input').click();
+}
+
+function handlePlaylistImgEdit(id, event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const pl = playlists.find(p => p.id === id);
+    if (!pl) return;
+    pl.img = e.target.result;
+    save();
+    showPlaylist(id); // re-render com nova imagem
+  };
+  reader.readAsDataURL(file);
+}
+
+function deletePlaylist(id) {
+  const pl = playlists.find(p => p.id === id);
+  if (!pl) return;
+
+  const existing = document.getElementById('delete-prompt');
+  if (existing) existing.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'delete-prompt';
+  popup.className = 'playlist-prompt-overlay';
+  popup.innerHTML = `
+    <div class="playlist-prompt-box" style="padding-bottom:16px">
+      <div class="playlist-prompt-title">Excluir playlist</div>
+      <div style="text-align:center;padding:6px 24px 20px;font-size:13px;color:var(--cream-dim);line-height:1.6">
+        Tem certeza que quer excluir<br><strong style="color:var(--cream)">"${pl.name}"</strong>?<br>
+        <span style="font-size:11px;opacity:0.7">As músicas não serão removidas.</span>
+      </div>
+      <div style="display:flex;gap:10px;padding:0 16px">
+        <button class="playlist-prompt-cancel" style="margin:0;flex:1" onclick="document.getElementById('delete-prompt').remove()">Cancelar</button>
+        <button class="playlist-prompt-cancel" style="margin:0;flex:1;background:rgba(196,92,74,0.15);color:var(--red);border:1px solid rgba(196,92,74,0.3)" onclick="confirmDeletePlaylist('${id}')">Excluir</button>
+      </div>
+    </div>`;
+  popup.addEventListener('click', e => { if (e.target === popup) popup.remove(); });
+  document.body.appendChild(popup);
+}
+
+function confirmDeletePlaylist(id) {
+  const pl = playlists.find(p => p.id === id);
+  document.getElementById('delete-prompt')?.remove();
+  // Desvincula músicas da playlist
+  songs.forEach(s => { if (s.playlistId === id) s.playlistId = null; });
+  playlists = playlists.filter(p => p.id !== id);
+  save();
+  toast('Excluída', `"${pl?.name}" foi excluída.`);
+  navigate('library');
+}
+
 function assignPlaylist(songId, playlistId) {
   const s = songs.find(x => x.id === songId);
   if (!s) return;
@@ -299,9 +354,31 @@ function assignPlaylist(songId, playlistId) {
 
 // ─── PLAYLISTS ────────────────────────────────────────────────
 function openPlaylistModal() {
-  ['p-emoji', 'p-name', 'p-desc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('p-name').value = '';
+  document.getElementById('p-desc').value = '';
+  // Reset image preview
+  const preview = document.getElementById('p-img-preview');
+  const placeholder = document.getElementById('p-img-placeholder');
+  if (preview) { preview.src = ''; preview.style.display = 'none'; }
+  if (placeholder) placeholder.style.display = '';
+  window._playlistImgData = null;
   openModal('modal-playlist');
-  setTimeout(() => document.getElementById('p-emoji').focus(), 100);
+  setTimeout(() => document.getElementById('p-name').focus(), 100);
+}
+
+function handlePlaylistImg(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    window._playlistImgData = e.target.result;
+    const preview = document.getElementById('p-img-preview');
+    const placeholder = document.getElementById('p-img-placeholder');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
 }
 
 function savePlaylist() {
@@ -310,13 +387,14 @@ function savePlaylist() {
   playlists.push({
     id:    'p' + Date.now(),
     name,
-    emoji: document.getElementById('p-emoji').value.trim() || '🎵',
+    img:   window._playlistImgData || null,
     desc:  document.getElementById('p-desc').value.trim()
   });
+  window._playlistImgData = null;
   save();
   closeModal('modal-playlist');
   toast('Criada!', `Playlist "${name}" criada.`);
-  renderView('playlists');
+  renderLibrary();
 }
 
 // ─── COVER UPLOAD ─────────────────────────────────────────────

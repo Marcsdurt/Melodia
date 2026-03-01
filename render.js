@@ -378,7 +378,7 @@ function renderLibrary() {
       sortedPlaylists.map(p => {
         const count = songs.filter(s => s.playlistId === p.id).length;
         return `<div class="playlist-card" onclick="showPlaylist('${p.id}')">
-          <div class="playlist-emoji">${p.emoji||'🎵'}</div>
+          ${p.img ? `<img class="playlist-cover" src="${p.img}" alt="">` : `<div class="playlist-cover-placeholder">🎵</div>`}
           <div class="playlist-name">${p.name}</div>
           <div class="playlist-desc">${p.desc||'Sem descrição.'}</div>
           <div class="playlist-count">${count} música${count!==1?'s':''}</div>
@@ -390,7 +390,7 @@ function renderLibrary() {
       sortedPlaylists.map(p => {
         const count = songs.filter(s => s.playlistId === p.id).length;
         return `<div class="playlist-card" onclick="showPlaylist('${p.id}')">
-          <div class="playlist-emoji">${p.emoji||'🎵'}</div>
+          ${p.img ? `<img class="playlist-cover" src="${p.img}" alt="">` : `<div class="playlist-cover-placeholder">🎵</div>`}
           <div class="playlist-name">${p.name}</div>
           <div class="playlist-desc">${p.desc||'Sem descrição.'}</div>
           <div class="playlist-count">${count} música${count!==1?'s':''}</div>
@@ -481,14 +481,28 @@ function renderProfile() {
 function showPlaylist(id) {
   const pl = playlists.find(p => p.id === id);
   const list = songs.filter(s => s.playlistId === id);
+
+  const coverEl = pl.img
+    ? `<img src="${pl.img}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">`
+    : `<div style="width:100%;height:100%;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:32px">🎵</div>`;
+
   document.getElementById('detail-content').innerHTML = `
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px">
-      <div style="font-size:48px">${pl.emoji || '🎵'}</div>
-      <div>
-        <div class="detail-title">${pl.name}</div>
+    <div style="display:flex;align-items:center;gap:18px;margin-bottom:28px">
+      <div class="playlist-detail-cover" onclick="editPlaylistImg()" title="Trocar foto">
+        ${coverEl}
+        <div class="playlist-detail-cover-edit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <input type="file" id="playlist-img-edit-input" accept="image/*" style="display:none" onchange="handlePlaylistImgEdit('${id}', event)">
+      </div>
+      <div style="flex:1;min-width:0">
+        <div class="detail-title" style="font-size:20px">${pl.name}</div>
         <div class="detail-artist">${pl.desc || ''}</div>
         <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-top:6px">${list.length} música${list.length !== 1 ? 's' : ''}</div>
       </div>
+      <button class="detail-icon-btn detail-icon-btn-danger" onclick="deletePlaylist('${id}')" title="Excluir playlist" style="align-self:flex-start">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>
     </div>
     <div class="divider"></div>
     <div class="song-grid">${list.length ? list.map(songCardHTML).join('') : '<div class="empty" style="grid-column:1/-1"><div class="empty-title">Playlist vazia</div><div class="empty-sub">Ao adicionar músicas, selecione esta playlist.</div></div>'}</div>`;
