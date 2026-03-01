@@ -37,6 +37,13 @@ function renderSettings() {
           </div>
           <div class="settings-toggle ${isDark ? 'on' : ''}" id="toggle-dark"></div>
         </label>
+        <label class="settings-toggle-row" onclick="toggleY2KMode()">
+          <div>
+            <div class="settings-row-label">🌐 Modo Y2K Webcore</div>
+            <div class="settings-row-sub">Interface estilo Windows XP / internet dos anos 2000</div>
+          </div>
+          <div class="settings-toggle ${userProfile.y2kMode ? 'on' : ''}" id="toggle-y2k"></div>
+        </label>
       </div>
 
       <!-- ACESSIBILIDADE -->
@@ -124,10 +131,17 @@ function handleAvatarUpload(event) {
 
 function toggleDarkMode() {
   userProfile.darkMode = !userProfile.darkMode;
+  // Desativa Y2K ao mudar dark mode
+  if (userProfile.y2kMode) {
+    userProfile.y2kMode = false;
+    applyY2KMode();
+  }
   saveProfile();
   applyTheme();
   const tog = document.getElementById('toggle-dark');
   if (tog) tog.classList.toggle('on', userProfile.darkMode);
+  const togY2K = document.getElementById('toggle-y2k');
+  if (togY2K) togY2K.classList.remove('on');
 }
 
 function applyTheme() {
@@ -231,6 +245,7 @@ if (window.innerWidth >= 900) {
 
 applyTheme();
 applyFontSize(userProfile.fontSize || 100);
+applyY2KMode();
 updateSidebarUser();
 renderView('feed');
 navigate('feed');
