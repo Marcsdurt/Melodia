@@ -328,6 +328,62 @@ function deletePlaylist(id) {
   document.body.appendChild(popup);
 }
 
+function editPlaylist(id) {
+  const pl = playlists.find(p => p.id === id);
+  if (!pl) return;
+
+  const existing = document.getElementById('edit-playlist-prompt');
+  if (existing) existing.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'edit-playlist-prompt';
+  popup.className = 'playlist-prompt-overlay';
+  popup.innerHTML = `
+    <div class="playlist-prompt-box" style="padding-bottom:20px">
+      <div class="playlist-prompt-title">Editar playlist</div>
+      <div style="padding:0 20px;display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-dim);display:block;margin-bottom:6px">Nome</label>
+          <input id="ep-name" type="text" value="${pl.name.replace(/"/g,'&quot;')}"
+            style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;color:var(--cream);font-family:inherit;font-size:14px;outline:none;transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"
+            onkeydown="if(event.key==='Enter')confirmEditPlaylist('${id}')">
+        </div>
+        <div>
+          <label style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--cream-dim);display:block;margin-bottom:6px">Descri\u00e7\u00e3o <span style="opacity:.5">(opcional)</span></label>
+          <input id="ep-desc" type="text" value="${(pl.desc||'').replace(/"/g,'&quot;')}"
+            style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;color:var(--cream);font-family:inherit;font-size:14px;outline:none;transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"
+            onkeydown="if(event.key==='Enter')confirmEditPlaylist('${id}')">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;padding:20px 20px 0">
+        <button class="playlist-prompt-cancel" style="margin:0;flex:1" onclick="document.getElementById('edit-playlist-prompt').remove()">Cancelar</button>
+        <button class="btn btn-primary" style="flex:1;justify-content:center;margin:0" onclick="confirmEditPlaylist('${id}')">Salvar</button>
+      </div>
+    </div>`;
+  popup.addEventListener('click', e => { if (e.target === popup) popup.remove(); });
+  document.body.appendChild(popup);
+  setTimeout(() => {
+    const inp = document.getElementById('ep-name');
+    if (inp) { inp.focus(); inp.select(); }
+  }, 80);
+}
+
+function confirmEditPlaylist(id) {
+  const pl = playlists.find(p => p.id === id);
+  if (!pl) return;
+  const name = document.getElementById('ep-name').value.trim();
+  if (!name) { toast('Aten\u00e7\u00e3o', 'D\u00ea um nome \u00e0 playlist.'); return; }
+  const desc = document.getElementById('ep-desc').value.trim();
+  pl.name = name;
+  pl.desc = desc;
+  save();
+  document.getElementById('edit-playlist-prompt')?.remove();
+  toast('Atualizada!', `Playlist renomeada para "${name}".`);
+  showPlaylist(id);
+}
+
 function confirmDeletePlaylist(id) {
   const pl = playlists.find(p => p.id === id);
   document.getElementById('delete-prompt')?.remove();

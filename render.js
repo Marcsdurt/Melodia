@@ -496,7 +496,7 @@ function showPlaylist(id) {
         <input type="file" id="playlist-img-edit-input" accept="image/*" style="display:none" onchange="handlePlaylistImgEdit('${id}', event)">
       </div>
       <div style="flex:1;min-width:0">
-        <div class="detail-title" style="font-size:20px">${pl.name}</div>
+        <div class="detail-title playlist-name-editable" style="font-size:20px;cursor:pointer" onclick="editPlaylist('${id}')" title="Toque para editar o nome">${pl.name}<span style="font-size:13px;color:var(--gold);margin-left:8px;opacity:0.7">✎</span></div>
         <div class="detail-artist">${pl.desc || ''}</div>
         <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-top:6px">${list.length} música${list.length !== 1 ? 's' : ''}</div>
       </div>
