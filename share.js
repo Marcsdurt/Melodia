@@ -1242,17 +1242,6 @@ async function drawStorieY2K() {
   ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 3;
   ctx.fillText('⊞  start', ST_X2 + 22, ST_Y2 + ST_H / 2);
 
-  // Diamante ✦ canto direito (como na inspiração)
-  ctx.save();
-  ctx.font = '68px Arial';
-  ctx.fillStyle = 'rgba(180,220,255,0.55)';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  ctx.shadowColor = 'rgba(100,180,255,0.8)';
-  ctx.shadowBlur  = 18;
-  ctx.fillText('✦', W - 40, TB2_Y + TB2_H / 2);
-  ctx.restore();
-
   // Clock
   ctx.save();
   ctx.font = '28px Tahoma, Arial';
