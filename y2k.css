@@ -526,66 +526,156 @@ body.y2k .playlist-cover {
 /* ══════════ MODAIS ══════════ */
 body.y2k .modal-overlay { background: rgba(8,20,68,0.52); backdrop-filter: none; }
 body.y2k .modal {
-  background: linear-gradient(180deg, #d8eaf8 0%, #c0d8ee 100%);
-  border: 2px solid #6aaad8;
-  border-top-color: rgba(255,255,255,0.6);
+  background: linear-gradient(180deg, #d8eaf8 0%, #c8dcf0 100%);
+  border: 2px solid #5a94cc;
+  border-top: none;
   border-radius: 8px 8px 5px 5px;
-  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.5), 0 8px 32px rgba(0,40,140,0.4), 0 2px 8px rgba(0,0,0,0.25);
-  padding: 0; overflow: hidden; max-width: 480px;
+  box-shadow:
+    inset 1px 0 0 rgba(255,255,255,0.5),
+    inset -1px 0 0 rgba(255,255,255,0.2),
+    0 10px 40px rgba(0,40,140,0.5),
+    0 2px 10px rgba(0,0,0,0.3);
+  padding: 0; overflow-x: hidden; overflow-y: auto; max-width: 480px;
 }
-body.y2k .modal::before {
-  content: '🎵 Melodia';
-  display: block;
-  background: var(--y2k-tb);
-  color: #fff; font-family: 'Tahoma', sans-serif; font-size: 11px; font-weight: 700;
-  padding: 5px 10px;
-  border-bottom: 1px solid #0a3898;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
-}
-body.y2k .modal-title  { display: none; }
-body.y2k .modal-body   { padding: 16px; background: rgba(255,255,255,0.55); }
+
+/* Disable the drag handle pseudo-element for modals in Y2K mode */
+body.y2k .modal::before { display: none !important; }
+
+/* Modal header IS the XP titlebar */
 body.y2k .modal-header {
-  background: var(--y2k-tb); border-bottom: 1px solid #0a3898;
-  padding: 5px 10px; display: flex; align-items: center; gap: 8px;
+  background: linear-gradient(180deg,
+    #7ac4ff 0%,
+    #3090f8 8%,
+    #1060d8 45%,
+    #0a50c4 46%,
+    #1870e0 68%,
+    #0e5acc 100%
+  );
+  border-bottom: 2px solid #062080;
+  padding: 0 8px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  border-radius: 6px 6px 0 0;
 }
+
+/* Highlight branco forte no topo — linha 1px nítida */
+body.y2k .modal-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.2) 0%,
+    rgba(255,255,255,0.95) 15%,
+    rgba(255,255,255,0.95) 85%,
+    rgba(255,255,255,0.2) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Glass shine — metade superior brilhante */
+body.y2k .modal-header::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 52%;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.42) 0%,
+    rgba(255,255,255,0.18) 60%,
+    rgba(255,255,255,0.0) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Linha escura embaixo (sombra da barra) */
+body.y2k .modal-header-bottom-shadow {
+  display: none; /* handled by border-bottom */
+}
+
+/* Title text — branco, nítido */
+body.y2k .modal-title {
+  font-family: 'Trebuchet MS', 'Tahoma', sans-serif;
+  font-size: 12px; font-weight: 700;
+  color: #fff;
+  text-shadow:
+    1px 1px 2px rgba(0,0,0,0.7),
+    0 0 14px rgba(120,190,255,0.55),
+    0 0 4px rgba(80,160,255,0.3);
+  letter-spacing: 0.025em;
+  display: flex; align-items: center; gap: 7px;
+  position: relative; z-index: 3;
+  flex: 1;
+}
+
+/* 🎵 ícone maior com glow azul suave */
+body.y2k .modal-title::before {
+  content: '🎵';
+  font-size: 16px;
+  filter:
+    drop-shadow(0 0 8px rgba(140,220,255,0.95))
+    drop-shadow(0 0 3px rgba(80,180,255,0.7))
+    drop-shadow(0 1px 2px rgba(0,0,0,0.55));
+  line-height: 1;
+}
+
+/* Subtitle — branca translúcida, nunca preta */
+body.y2k .modal-title-sub {
+  color: rgba(255,255,255,0.78);
+  font-family: 'Tahoma', sans-serif;
+  font-size: 10px;
+  font-style: normal;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.55), 0 0 6px rgba(0,60,180,0.3);
+  margin-top: 1px;
+  position: relative; z-index: 3;
+}
+
+body.y2k .modal-body { padding: 14px 16px; background: rgba(255,255,255,0.5); }
+
+/* X close button — proper XP red button */
 body.y2k .modal-close {
-  width: 18px; height: 18px;
-  background: linear-gradient(135deg, #ff8888, #dc3838);
-  border: 1px solid #981818; border-radius: 2px;
-  color: #fff; font-size: 11px; font-weight: 700; cursor: pointer;
+  width: 21px; height: 21px;
+  background: linear-gradient(180deg, #ff9898 0%, #e03030 48%, #c01818 49%, #e04040 100%);
+  border: 1px solid #881010;
+  border-top-color: rgba(255,160,160,0.7);
+  border-radius: 3px;
+  color: #fff; font-size: 13px; font-weight: 900; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  box-shadow: var(--y2k-inset); margin-left: auto;
+  box-shadow:
+    inset 1px 1px 0 rgba(255,255,255,0.55),
+    inset -1px -1px 0 rgba(0,0,0,0.25),
+    2px 2px 4px rgba(0,0,0,0.3);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  transition: all 0.1s;
+  position: relative; z-index: 1;
+  margin-left: auto;
+  flex-shrink: 0;
+  min-width: unset; min-height: unset;
+  padding: 0;
 }
-body.y2k .modal-close:hover { background: linear-gradient(135deg, #ffaaaa, #f05050); }
+body.y2k .modal-close:hover {
+  background: linear-gradient(180deg, #ffb0b0 0%, #f04040 48%, #d02020 49%, #f05050 100%);
+  box-shadow:
+    inset 1px 1px 0 rgba(255,255,255,0.7),
+    2px 2px 6px rgba(0,0,0,0.35);
+}
+body.y2k .modal-close:active {
+  background: linear-gradient(180deg, #d02020 0%, #b01010 100%);
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.4);
+}
 
-/* ══════════ FORMULÁRIOS ══════════ */
-body.y2k .form-input,
-body.y2k .form-textarea,
+/* ══════════ FORMULÁRIOS (base — ver regras detalhadas no final) ══════════ */
 body.y2k .form-select {
-  background: rgba(255,255,255,0.96);
-  border: 2px solid #6aaad8;
-  border-top-color: #3878c0; border-left-color: #4888c8;
-  border-radius: 2px; color: #071830;
-  font-family: 'Tahoma', sans-serif; font-size: 12px;
-  box-shadow: inset 1px 1px 4px rgba(0,40,130,0.18);
+  -webkit-appearance: none;
 }
-body.y2k .form-input:focus,
-body.y2k .form-textarea:focus,
-body.y2k .form-select:focus {
-  border-color: #2060b8; background: #fff;
-  box-shadow: inset 1px 1px 3px rgba(0,40,130,0.12), 0 0 0 2px rgba(40,110,200,0.28);
-  outline: none;
-}
-body.y2k .form-label { font-family: 'Tahoma', sans-serif; font-size: 11px; font-weight: 700; color: #071830; }
 
-/* ══════════ STARS ══════════ */
-body.y2k .star-btn.active,
-body.y2k .star-btn.filled {
-  color: var(--y2k-star) !important;
-  text-shadow: 0 0 8px rgba(240,168,0,0.9), 0 0 16px rgba(255,180,0,0.5);
-  filter: drop-shadow(0 0 4px rgba(240,160,0,0.7));
-}
+/* ══════════ STARS (ver regras detalhadas no final) ══════════ */
 
 /* ══════════ SETTINGS ══════════ */
 body.y2k .settings-section {
@@ -869,4 +959,329 @@ body.y2k .view.active { animation: y2kFadeIn 0.18s ease; }
 @keyframes y2kFadeIn {
   from { opacity: 0; transform: translateY(3px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════ INPUTS MELHORADOS (XP sunken field) ══════════ */
+body.y2k .form-input,
+body.y2k .form-textarea,
+body.y2k .form-select {
+  background: #f8fcff;
+  /* Sunken XP: borda superior/esquerda escura, inferior/direita clara */
+  border-top:    2px solid #4a78b0;
+  border-left:   2px solid #5888c0;
+  border-bottom: 2px solid #c8dff0;
+  border-right:  2px solid #b8d2e8;
+  border-radius: 2px;
+  color: #071830;
+  font-family: 'Tahoma', sans-serif; font-size: 12px;
+  /* Inner shadow duplo: escuro no topo-esq, highlight branco sutil no resto */
+  box-shadow:
+    inset 2px 2px 4px rgba(0,40,130,0.18),
+    inset -1px -1px 0 rgba(255,255,255,0.75),
+    inset 0 0 0 1px rgba(255,255,255,0.35);
+  padding: 8px 10px;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+body.y2k .form-input:focus,
+body.y2k .form-textarea:focus,
+body.y2k .form-select:focus {
+  background: #ffffff;
+  border-top-color:   #1848a0;
+  border-left-color:  #2258b0;
+  border-bottom-color: #a8d0ec;
+  border-right-color:  #98c0e0;
+  box-shadow:
+    inset 2px 2px 3px rgba(0,40,130,0.12),
+    inset -1px -1px 0 rgba(255,255,255,0.9),
+    0 0 0 3px rgba(30,100,200,0.22),
+    0 0 8px rgba(60,130,230,0.18);
+  outline: none;
+}
+body.y2k .form-input::placeholder,
+body.y2k .form-textarea::placeholder { color: #7aaac8; }
+body.y2k .form-label {
+  font-family: 'Tahoma', sans-serif;
+  font-size: 11px; font-weight: 700;
+  color: #071830;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.85);
+}
+
+/* ══════════ FORM SECTIONS (caixas dentro de caixas) ══════════ */
+/* Wrap each logical group as a mini XP panel */
+body.y2k .form-row {
+  margin-bottom: 12px;
+}
+
+/* Estilo para os group labels dentro do modal */
+body.y2k .modal-body .form-group-heading,
+body.y2k .modal-body .form-section {
+  background: linear-gradient(180deg, rgba(220,238,255,0.85) 0%, rgba(200,225,248,0.7) 100%);
+  border: 1px solid #8ab8d8;
+  border-top-color: rgba(255,255,255,0.8);
+  border-radius: 4px;
+  padding: 10px 12px 12px;
+  margin-bottom: 12px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.65), 1px 1px 4px rgba(0,40,120,0.12);
+}
+
+/* Modal divider "ou preencha manualmente" */
+body.y2k .modal-divider {
+  background: linear-gradient(90deg, transparent, rgba(100,160,230,0.35), transparent);
+  border: none;
+  color: #2858a8;
+  font-family: 'Tahoma', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 8px 0;
+  display: flex; align-items: center;
+  gap: 8px;
+  margin: 0 16px;
+}
+body.y2k .modal-divider::before,
+body.y2k .modal-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.9), rgba(100,160,230,0.5));
+  box-shadow: 0 1px 0 rgba(0,40,120,0.12);
+}
+body.y2k .modal-divider::after {
+  background: linear-gradient(90deg, rgba(100,160,230,0.5), rgba(255,255,255,0.9));
+}
+
+/* ══════════ COVER UPLOAD AREA ══════════ */
+body.y2k .cover-upload-zone {
+  background:
+    radial-gradient(ellipse 80% 70% at 30% 40%, rgba(210,238,255,0.85) 0%, rgba(175,215,252,0.5) 50%, transparent 80%),
+    linear-gradient(180deg, rgba(205,232,255,0.7) 0%, rgba(175,210,248,0.55) 100%);
+  border: 2px dashed #3a7cc8;
+  border-radius: 5px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.85),
+    inset 0 -1px 0 rgba(0,50,130,0.08),
+    0 3px 10px rgba(0,40,140,0.15),
+    0 1px 3px rgba(0,0,0,0.08);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+/* Ícone grande decorativo */
+body.y2k .cover-upload-zone::before {
+  content: '🖼';
+  position: absolute;
+  bottom: 6px; right: 10px;
+  font-size: 32px;
+  opacity: 0.22;
+  filter: drop-shadow(0 2px 4px rgba(0,40,120,0.3));
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* Brilho de vidro no topo */
+body.y2k .cover-upload-zone::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.0) 100%);
+  pointer-events: none;
+  border-radius: 3px 3px 0 0;
+}
+
+body.y2k .cover-upload-zone:hover {
+  background:
+    radial-gradient(ellipse 90% 80% at 35% 45%, rgba(180,225,255,0.95) 0%, rgba(145,200,252,0.65) 55%, transparent 85%),
+    linear-gradient(180deg, rgba(180,220,255,0.8) 0%, rgba(148,198,250,0.7) 100%);
+  border-color: #1a5cc0;
+  border-style: solid;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.95),
+    0 0 0 3px rgba(30,110,220,0.2),
+    0 0 18px rgba(40,120,240,0.25),
+    0 4px 14px rgba(0,50,160,0.2);
+}
+
+body.y2k .cover-upload-label {
+  color: #1038780;
+  font-family: 'Tahoma', sans-serif;
+  font-size: 11px; font-weight: 700;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.9);
+  position: relative; z-index: 1;
+}
+body.y2k .cover-upload-hint {
+  color: #3868a0;
+  font-family: 'Tahoma', sans-serif;
+  font-size: 10px;
+  position: relative; z-index: 1;
+}
+
+/* ══════════ ESTRELAS — Windows Media Player 10 style ══════════ */
+body.y2k .star-pick {
+  font-size: 26px;
+  /* Estrelas "apagadas" com tom azulado vidro */
+  color: transparent;
+  -webkit-text-stroke: 1.5px #6a98c8;
+  filter:
+    drop-shadow(0 1px 1px rgba(0,0,0,0.12))
+    drop-shadow(0 0 3px rgba(80,140,220,0.15));
+  transition: all 0.14s cubic-bezier(0.34,1.56,0.64,1);
+  cursor: pointer;
+  padding: 3px;
+}
+body.y2k .star-pick:hover {
+  /* Hover: glow azul + dourado nascendo */
+  color: #ffe060;
+  -webkit-text-stroke: 1px rgba(200,140,0,0.3);
+  transform: scale(1.3) translateY(-2px);
+  filter:
+    drop-shadow(0 0 10px rgba(255,210,0,0.9))
+    drop-shadow(0 0 5px rgba(100,180,255,0.65))
+    drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+body.y2k .star-pick.on {
+  /* Ativa: dourado com glow quente em camadas */
+  color: #ffd800;
+  -webkit-text-stroke: 1px rgba(180,100,0,0.25);
+  transform: scale(1.1);
+  filter:
+    drop-shadow(0 0 7px rgba(255,200,0,0.95))
+    drop-shadow(0 0 16px rgba(255,160,0,0.55))
+    drop-shadow(0 0 28px rgba(240,140,0,0.25))
+    drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+}
+body.y2k .star-pick:active {
+  /* Pressionada: afunda, escurece levemente */
+  transform: scale(0.88) translateY(1px);
+  color: #e0a800;
+  filter:
+    drop-shadow(0 0 4px rgba(220,160,0,0.7))
+    drop-shadow(0 1px 1px rgba(0,0,0,0.3));
+  -webkit-text-stroke: 1px rgba(140,70,0,0.35);
+}
+
+/* Estrelas nos cards (menores) */
+body.y2k .star-btn.active,
+body.y2k .star-btn.filled {
+  color: #ffd800 !important;
+  -webkit-text-stroke: 0 !important;
+  text-shadow: none;
+  filter:
+    drop-shadow(0 0 5px rgba(255,200,0,0.9))
+    drop-shadow(0 0 10px rgba(255,160,0,0.5)) !important;
+}
+
+/* ══════════ SEARCH ZONE NO MODAL ══════════ */
+body.y2k .modal-search-zone {
+  padding: 10px 12px 0;
+  background: rgba(255,255,255,0.35);
+  border-bottom: 1px solid rgba(255,255,255,0.7);
+  box-shadow: 0 1px 0 rgba(0,40,120,0.1);
+}
+
+body.y2k .search-api-wrap {
+  background: #ffffff;
+  border-top: 2px solid #5a88b8;
+  border-left: 2px solid #6a98c8;
+  border-bottom: 2px solid #b8d4ee;
+  border-right: 2px solid #a8c8e4;
+  border-radius: 2px;
+  box-shadow: inset 1px 1px 3px rgba(0,40,130,0.12);
+}
+body.y2k .search-api-wrap input {
+  color: #071830;
+  font-family: 'Tahoma', sans-serif;
+  font-size: 12px;
+  background: transparent;
+}
+body.y2k .search-api-wrap input::placeholder { color: #7aaac8; }
+
+/* API results list */
+body.y2k .api-result-item {
+  background: linear-gradient(90deg, rgba(255,255,255,0.85), rgba(215,238,255,0.7));
+  border: 1px solid rgba(110,165,220,0.55);
+  border-top-color: rgba(255,255,255,0.8);
+  border-radius: 3px;
+  margin-bottom: 2px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+}
+body.y2k .api-result-item:hover {
+  background: linear-gradient(90deg, rgba(195,228,255,0.9), rgba(175,215,252,0.75));
+  border-color: #3878c8;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.85), 1px 1px 4px rgba(0,50,160,0.18);
+}
+body.y2k .api-result-title  { color: #071830; font-family: 'Trebuchet MS', sans-serif; font-weight: 700; font-size: 12px; }
+body.y2k .api-result-artist { color: #305878; font-family: 'Tahoma', sans-serif; font-size: 10px; }
+
+body.y2k .api-hint {
+  color: #4878a8;
+  font-family: 'Tahoma', sans-serif;
+  font-size: 11px;
+  text-align: center;
+  padding: 14px 10px;
+}
+body.y2k .api-hint-icon { font-size: 22px; opacity: 0.5; margin-bottom: 4px; }
+
+/* ══════════ FUNDO MELHORADO ══════════ */
+body.y2k {
+  background:
+    radial-gradient(ellipse 55% 45% at 15% 10%, #a8d0f0 0%, transparent 55%),
+    radial-gradient(ellipse 70% 55% at 88% 85%, #98c8ec 0%, transparent 52%),
+    radial-gradient(ellipse 45% 55% at 50% 50%, #c8dff4 0%, transparent 60%),
+    radial-gradient(ellipse 90% 70% at 50% 0%, rgba(180,220,255,0.6) 0%, transparent 50%),
+    #b4ccdf !important;
+}
+
+/* ══════════ MODAL BODY — fundo mais texturizado ══════════ */
+body.y2k .modal-body {
+  padding: 14px 16px;
+  background:
+    radial-gradient(ellipse 90% 60% at 20% 20%, rgba(220,240,255,0.55) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 80% 80%, rgba(195,228,255,0.45) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(232,244,255,0.65) 0%, rgba(210,232,250,0.5) 100%);
+}
+
+/* ══════════ ANOTAÇÕES & SENTIMENTOS — módulo emocional ══════════ */
+/* Targetamos o form-row que contém #f-notes */
+body.y2k .form-row:has(#f-notes) {
+  background:
+    linear-gradient(180deg, rgba(255,250,230,0.75) 0%, rgba(252,246,215,0.6) 100%);
+  border: 1px solid rgba(200,170,60,0.35);
+  border-top: 2px solid rgba(230,200,80,0.5);
+  border-bottom: 1px solid rgba(255,240,180,0.65);
+  border-radius: 4px;
+  padding: 10px 12px 12px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.8),
+    inset 0 -1px 0 rgba(180,140,0,0.06),
+    1px 2px 6px rgba(180,140,0,0.1);
+}
+
+/* Label "Anotações & Sentimentos" com ícone */
+body.y2k .form-row:has(#f-notes) .form-label::before {
+  content: '💭 ';
+  font-size: 12px;
+}
+body.y2k .form-row:has(#f-notes) .form-label {
+  color: #5a3a08;
+  text-shadow: 0 1px 0 rgba(255,240,180,0.9);
+}
+
+/* Textarea de notas com tom amarelado tipo post-it */
+body.y2k .form-row:has(#f-notes) textarea {
+  background: rgba(255,255,230,0.92) !important;
+  border-top-color: #a89040 !important;
+  border-left-color: #b8a050 !important;
+  border-bottom-color: #e8d880 !important;
+  border-right-color: #d8c870 !important;
+  box-shadow:
+    inset 2px 2px 4px rgba(100,80,0,0.1),
+    inset -1px -1px 0 rgba(255,255,220,0.9) !important;
+  color: #3a2800 !important;
+}
+body.y2k .form-row:has(#f-notes) textarea::placeholder {
+  color: #a08848 !important;
+  font-style: italic;
 }
