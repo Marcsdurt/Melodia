@@ -356,6 +356,44 @@ function renderLibrary() {
   const noted = songs.filter(s => s.notes);
   let html = '';
 
+  // ── ARTISTAS ──
+  const sortedArtists = [...artists].reverse();
+  const ARTIST_PREVIEW = 6;
+  const showAllArtists = window._libraryShowAllArtists || false;
+
+  html += `
+    <div class="section-head">
+      <div class="section-title">🎤 <em>Artistas</em></div>
+      <div style="display:flex;gap:14px;align-items:center">
+        ${artists.length > 0 ? `<button class="playlist-see-all-btn" onclick="toggleLibraryArtists()">${showAllArtists ? 'Recolher' : 'Ver todos'}</button>` : ''}
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 11px" onclick="openArtistModal()">+ Novo</button>
+      </div>
+    </div>`;
+
+  if (artists.length === 0) {
+    html += `<div class="library-empty-section" onclick="openArtistModal()"><span>🎤</span> Cadastrar primeiro artista</div>`;
+  } else if (showAllArtists) {
+    html += `<div class="artist-grid artist-grid-expanded" style="margin-bottom:32px">` +
+      sortedArtists.map(a => {
+        const count = songs.filter(s => s.artistId === a.id).length;
+        return `<div class="artist-card" onclick="showArtist('${a.id}')">
+          ${a.img ? `<img class="artist-cover" src="${a.img}" alt="">` : `<div class="artist-cover-placeholder">🎤</div>`}
+          <div class="artist-name">${a.name}</div>
+          <div class="artist-count">${count} música${count !== 1 ? 's' : ''}</div>
+        </div>`;
+      }).join('') + `</div>`;
+  } else {
+    html += `<div class="artist-carousel" id="artist-carousel" style="margin-bottom:32px">` +
+      sortedArtists.slice(0, ARTIST_PREVIEW).map(a => {
+        const count = songs.filter(s => s.artistId === a.id).length;
+        return `<div class="artist-card" onclick="showArtist('${a.id}')">
+          ${a.img ? `<img class="artist-cover" src="${a.img}" alt="">` : `<div class="artist-cover-placeholder">🎤</div>`}
+          <div class="artist-name">${a.name}</div>
+          <div class="artist-count">${count} música${count !== 1 ? 's' : ''}</div>
+        </div>`;
+      }).join('') + `</div>`;
+  }
+
   // Playlists — mais recente à esquerda
   const sortedPlaylists = [...playlists].reverse();
   const PLAYLIST_PREVIEW = 6; // quantas mostrar no carrossel antes de "ver todas"
@@ -416,6 +454,7 @@ function renderLibrary() {
   }
   c.innerHTML = html;
   setTimeout(initCarouselDrag, 0);
+  setTimeout(initArtistCarouselDrag, 0);
 }
 
 // ─── PERFIL ───────────────────────────────────────────────────
@@ -548,6 +587,10 @@ function openDetail(id) {
           <button class="detail-icon-btn" onclick="addToPlaylistPrompt('${s.id}')" title="Adicionar à playlist">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/><circle cx="19" cy="19" r="3" fill="var(--bg2)" stroke="currentColor"/><line x1="19" y1="17.5" x2="19" y2="20.5"/><line x1="17.5" y1="19" x2="20.5" y2="19"/></svg>
             <span>Playlist</span>
+          </button>
+          <button class="detail-icon-btn" onclick="associateArtistPrompt('${s.id}')" title="Associar artista">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            <span>Associar</span>
           </button>
           <button class="detail-icon-btn detail-icon-btn-danger" onclick="deleteSong('${s.id}')" title="Remover">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>

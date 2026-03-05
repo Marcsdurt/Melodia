@@ -1,6 +1,7 @@
 // ─── STATE ───────────────────────────────────────────────────
 let songs       = JSON.parse(localStorage.getItem('melodia_songs')    || '[]');
 let playlists   = JSON.parse(localStorage.getItem('melodia_playlists') || '[]');
+let artists     = JSON.parse(localStorage.getItem('melodia_artists')   || '[]');
 let userProfile = JSON.parse(localStorage.getItem('melodia_profile')   || '{"name":"","avatar":"","darkMode":true,"fontSize":100}');
 let currentRating  = 0;
 let currentView    = 'feed';
@@ -30,6 +31,7 @@ function genreColor(g) { return GENRES_COLORS[g] || '#5a5a5a'; }
 function save() {
   localStorage.setItem('melodia_songs',     JSON.stringify(songs));
   localStorage.setItem('melodia_playlists', JSON.stringify(playlists));
+  localStorage.setItem('melodia_artists',   JSON.stringify(artists));
 }
 
 function saveProfile() {
