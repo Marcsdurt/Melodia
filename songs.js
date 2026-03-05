@@ -111,6 +111,7 @@ function openAddModal() {
     </div>`;
   document.getElementById('f-itunes-art').value = '';
   document.getElementById('f-cover-url').value  = '';
+  document.getElementById('f-preview-url').value = '';
   const preview = document.getElementById('cover-preview');
   preview.style.display = 'none';
   preview.src = '';
@@ -188,8 +189,9 @@ function saveSong() {
     notes:      document.getElementById('f-notes').value.trim(),
     rating:     currentRating,
     playlistId: document.getElementById('f-playlist').value,
-    itunesArt:  document.getElementById('f-itunes-art').value || '',
-    coverUrl:   document.getElementById('f-cover-url').value  || '',
+    itunesArt:  document.getElementById('f-itunes-art').value  || '',
+    coverUrl:   document.getElementById('f-cover-url').value   || '',
+    previewUrl: document.getElementById('f-preview-url').value || '',
     lyrics:     document.getElementById('f-lyrics').value.trim()
   };
 
@@ -641,7 +643,8 @@ function selectApiResult(idx, track) {
   if (el) el.insertAdjacentHTML('beforeend', '<span class="api-result-check">✓</span>');
 
   selectedApiItem = track;
-  document.getElementById('f-itunes-art').value = track.artworkUrl100 || '';
+  document.getElementById('f-itunes-art').value     = track.artworkUrl100  || '';
+  document.getElementById('f-preview-url').value    = track.previewUrl     || '';
 
   const preview    = document.getElementById('cover-preview');
   const uploadZone = document.getElementById('cover-upload-zone');
@@ -655,8 +658,8 @@ function selectApiResult(idx, track) {
   const year  = track.releaseDate ? track.releaseDate.slice(0, 4) : '';
   const genre = mapItunesGenre(track.primaryGenreName);
 
-  document.getElementById('f-title').value  = track.trackName    || '';
-  document.getElementById('f-artist').value = track.artistName   || '';
+  document.getElementById('f-title').value  = track.trackName     || '';
+  document.getElementById('f-artist').value = track.artistName    || '';
   document.getElementById('f-album').value  = track.collectionName || '';
   document.getElementById('f-year').value   = year;
 
@@ -665,8 +668,36 @@ function selectApiResult(idx, track) {
     if (opt.value === genre) { genreSelect.value = genre; break; }
   }
 
+  // Mostra botão de prévia inline no item selecionado se houver previewUrl
+  if (track.previewUrl && el) {
+    const existingBtn = el.querySelector('.api-inline-preview');
+    if (!existingBtn) {
+      const previewBtn = document.createElement('button');
+      previewBtn.className = 'api-inline-preview';
+      previewBtn.title = 'Ouvir prévia de 30s';
+      previewBtn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+      previewBtn.onclick = (e) => {
+        e.stopPropagation();
+        _playApiPreview(track.previewUrl, track.trackName, track.artistName, track.artworkUrl100);
+      };
+      el.insertBefore(previewBtn, el.querySelector('.api-result-check'));
+    }
+  }
+
   document.querySelector('#modal-add .modal-body').classList.add('form-prefilled');
   document.querySelector('#modal-add .modal-body').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Prévia rápida direto da busca (antes de salvar)
+function _playApiPreview(url, title, artist, artUrl) {
+  // Cria uma song temporária fake só para o player
+  const fakeSong = { id: '__api_preview__', title, artist, previewUrl: url,
+    itunesArt: artUrl || '', genre: '' };
+  // Injeta temporariamente no array (não salvo)
+  const existing = songs.find(x => x.id === '__api_preview__');
+  if (!existing) songs.push(fakeSong);
+  else Object.assign(existing, fakeSong);
+  playPreview('__api_preview__');
 }
 
 // ─── ARTISTAS ─────────────────────────────────────────────────
@@ -739,7 +770,10 @@ function confirmSaveArtist(editId) {
     const a = artists.find(x => x.id === editId);
     if (!a) return;
     a.name = name;
-    if (window._artistImgData !== undefined) a.img = window._artistImgData;
+    if (window._artistImgData !== undefined) {
+      a.img = window._artistImgData;
+      a.imgIsTemp = false; // usuário escolheu foto manualmente — não é mais temporária
+    }
     save();
     document.getElementById('artist-modal')?.remove();
     toast('Atualizado!', `Artista "${name}" atualizado.`);
@@ -759,12 +793,17 @@ function showArtist(id) {
   const a = artists.find(x => x.id === id);
   if (!a) return;
   const list = songs.filter(s => s.artistId === id);
+  const borderStyle = a.imgIsTemp ? 'border:2px dashed var(--gold);opacity:.85' : 'border:2px solid var(--border)';
 
   document.getElementById('detail-content').innerHTML = `
-    <div style="display:flex;align-items:center;gap:18px;margin-bottom:28px">
-      <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;border:2px solid var(--border);flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer"
-        onclick="openArtistModal('${id}')" title="Editar foto">
-        ${a.img ? `<img src="${a.img}" style="width:100%;height:100%;object-fit:cover">` : `🎤`}
+    <div style="display:flex;align-items:center;gap:18px;margin-bottom:${a.imgIsTemp ? '12px' : '28px'}">
+      <div style="position:relative;flex-shrink:0">
+        <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;${borderStyle};background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer"
+          onclick="openArtistModal('${id}')" title="Editar foto">
+          ${a.img ? `<img src="${a.img}" style="width:100%;height:100%;object-fit:cover">` : `🎤`}
+        </div>
+        ${a.imgIsTemp ? `
+        <div style="position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:var(--gold);border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--bg)">⚠</div>` : ''}
       </div>
       <div style="flex:1;min-width:0">
         <div class="detail-title" style="font-size:20px;cursor:pointer" onclick="openArtistModal('${id}')" title="Editar nome">
@@ -776,6 +815,14 @@ function showArtist(id) {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
       </button>
     </div>
+    ${a.imgIsTemp ? `
+    <div class="assoc-temp-img-notice" style="margin:0 0 20px">
+      <span class="assoc-temp-notice-icon">⚠</span>
+      <div>
+        <strong>Foto provisória</strong> — a imagem atual é a capa do álbum, não uma foto real do artista.
+        <span style="color:var(--gold);cursor:pointer" onclick="openArtistModal('${id}')"> Substituir agora →</span>
+      </div>
+    </div>` : ''}
     <div class="divider"></div>
     <div class="song-grid">${list.length
       ? list.map(songCardHTML).join('')
@@ -959,6 +1006,9 @@ function _showAssocSuggest(songId, artist, showPrefOption) {
 
 // ── Tela B: sugestão de criação de novo artista ──
 function _showAssocSuggestNew(songId, rawName, coverImg) {
+  const s = songs.find(x => x.id === songId);
+  const hasPreview = !!(s?.previewUrl);
+
   const popup = document.createElement('div');
   popup.id = 'artist-prompt';
   popup.className = 'playlist-prompt-overlay';
@@ -970,19 +1020,36 @@ function _showAssocSuggestNew(songId, rawName, coverImg) {
       </div>
 
       <div class="assoc-artist-preview">
-        <div class="assoc-artist-img" id="assoc-new-img-wrap" style="cursor:pointer" onclick="document.getElementById('assoc-new-img-input').click()" title="Trocar foto">
-          ${coverImg
-            ? `<img id="assoc-new-img" src="${coverImg}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
-            : `<span style="font-size:28px">🎤</span>`}
-          <div class="assoc-img-edit-overlay">📷</div>
+        <div class="assoc-artist-img-wrap">
+          <div class="assoc-artist-img ${coverImg ? 'assoc-img-is-cover' : ''}"
+            id="assoc-new-img-wrap" style="cursor:pointer"
+            onclick="document.getElementById('assoc-new-img-input').click()" title="Trocar foto">
+            ${coverImg
+              ? `<img id="assoc-new-img" src="${coverImg}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+              : `<span style="font-size:28px">🎤</span>`}
+            <div class="assoc-img-edit-overlay">📷</div>
+          </div>
+          ${coverImg ? `
+          <div class="assoc-temp-img-badge" title="Esta é a capa do álbum, não uma foto do artista">
+            <span class="assoc-temp-img-icon">⚠</span>
+          </div>` : ''}
         </div>
         <input type="file" id="assoc-new-img-input" accept="image/*" style="display:none" onchange="_handleAssocNewImg(event)">
         <div class="assoc-artist-info" style="flex:1">
           <input id="assoc-new-name" class="assoc-name-input" value="${rawName.replace(/"/g,'&quot;')}" placeholder="Nome do artista"
             onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'">
-          <div class="assoc-artist-sub" style="margin-top:4px">Sugestão baseada nos metadados da música</div>
+          <div class="assoc-artist-sub" style="margin-top:4px">Sugestão baseada nos metadados</div>
         </div>
       </div>
+
+      ${coverImg ? `
+      <div class="assoc-temp-img-notice">
+        <span class="assoc-temp-notice-icon">⚠</span>
+        <div>
+          <strong>Foto temporária</strong> — esta é a capa do álbum, não uma foto real do artista.
+          Toque na imagem para substituir por uma foto adequada.
+        </div>
+      </div>` : ''}
 
       <div class="assoc-actions">
         <button class="assoc-btn-primary" onclick="_confirmCreateAndAssign('${songId}')">
@@ -998,6 +1065,7 @@ function _showAssocSuggestNew(songId, rawName, coverImg) {
   popup.addEventListener('click', e => { if (e.target === popup) closeAssocPopup(); });
   document.body.appendChild(popup);
   window._assocNewImgData = coverImg || null;
+  window._assocNewImgIsTemp = !!coverImg; // marca que é imagem temporária
 }
 
 function _handleAssocNewImg(event) {
@@ -1005,7 +1073,8 @@ function _handleAssocNewImg(event) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    window._assocNewImgData = e.target.result;
+    window._assocNewImgData   = e.target.result;
+    window._assocNewImgIsTemp = false; // usuário escolheu foto real — não é mais temporária
     const wrap = document.getElementById('assoc-new-img-wrap');
     if (wrap) {
       const existing = wrap.querySelector('img,span');
@@ -1014,7 +1083,11 @@ function _handleAssocNewImg(event) {
       img.src = e.target.result;
       img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%';
       wrap.insertBefore(img, wrap.querySelector('.assoc-img-edit-overlay'));
+      wrap.classList.remove('assoc-img-is-cover');
     }
+    // Remove badge e aviso de imagem temporária
+    document.querySelector('.assoc-temp-img-badge')?.remove();
+    document.querySelector('.assoc-temp-img-notice')?.remove();
   };
   reader.readAsDataURL(file);
 }
@@ -1033,9 +1106,10 @@ function _confirmCreateAndAssign(songId) {
     return;
   }
 
-  const newArtist = { id: 'a' + Date.now(), name, img: window._assocNewImgData || null };
+  const newArtist = { id: 'a' + Date.now(), name, img: window._assocNewImgData || null, imgIsTemp: !!(window._assocNewImgIsTemp) };
   artists.push(newArtist);
-  window._assocNewImgData = null;
+  window._assocNewImgData   = null;
+  window._assocNewImgIsTemp = false;
 
   const s = songs.find(x => x.id === songId);
   if (s) s.artistId = newArtist.id;
@@ -1269,4 +1343,262 @@ function assignArtist(songId, artistId) {
   const a = artists.find(x => x.id === artistId);
   toast('Artista', a ? `Associado a "${a.name}"` : 'Associação removida');
   openDetail(songId);
+}
+
+
+// ─── PREVIEW DE REPRODUÇÃO ────────────────────────────────────
+// Estado global do player
+window._previewAudio    = null;
+window._previewSongId   = null;
+window._previewTimer    = null;
+window._previewDuration = 30; // segundos de prévia
+
+function _getPreviewBar() {
+  let bar = document.getElementById('preview-player-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'preview-player-bar';
+    bar.className = 'preview-bar';
+    bar.innerHTML = `
+      <div class="preview-bar-art" id="preview-bar-art"></div>
+      <div class="preview-bar-info">
+        <div class="preview-bar-title" id="preview-bar-title"></div>
+        <div class="preview-bar-artist" id="preview-bar-artist"></div>
+      </div>
+      <div class="preview-bar-controls">
+        <div class="preview-bar-progress-wrap">
+          <div class="preview-bar-progress" id="preview-bar-progress"></div>
+        </div>
+        <div class="preview-bar-time" id="preview-bar-time">0:30</div>
+      </div>
+      <button class="preview-bar-play" id="preview-bar-play" onclick="togglePreview()">
+        <svg id="preview-icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <svg id="preview-icon-pause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+      </button>
+      <button class="preview-bar-close" onclick="stopPreview()" title="Fechar">×</button>`;
+    document.body.appendChild(bar);
+  }
+  return bar;
+}
+
+function playPreview(songId) {
+  const s = songs.find(x => x.id === songId);
+  if (!s || !s.previewUrl) {
+    toast('Sem prévia', 'Esta música não tem URL de prévia disponível.');
+    return;
+  }
+
+  // Se já tocando a mesma música, alterna play/pause
+  if (window._previewSongId === songId && window._previewAudio) {
+    togglePreview();
+    return;
+  }
+
+  // Para qualquer prévia em andamento
+  stopPreview(false);
+
+  const audio = new Audio(s.previewUrl);
+  audio.volume = 0.85;
+  window._previewAudio  = audio;
+  window._previewSongId = songId;
+
+  // Monta a barra
+  const bar = _getPreviewBar();
+  const artUrl = s.coverUrl || (s.itunesArt ? s.itunesArt.replace('100x100bb','60x60bb') : null);
+  document.getElementById('preview-bar-art').innerHTML = artUrl
+    ? `<img src="${artUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:4px">`
+    : `<span style="font-size:18px">${genreEmoji(s.genre)}</span>`;
+  document.getElementById('preview-bar-title').textContent  = s.title;
+  document.getElementById('preview-bar-artist').textContent = s.artist;
+  document.getElementById('preview-bar-progress').style.width = '0%';
+  document.getElementById('preview-bar-time').textContent = '0:30';
+  _setPreviewPlayState(true);
+  bar.classList.add('visible');
+
+  // Marca botão no detalhe como ativo
+  _updateDetailPreviewBtn(songId, true);
+
+  audio.addEventListener('timeupdate', () => {
+    const elapsed = audio.currentTime;
+    const dur     = audio.duration || window._previewDuration;
+    const pct     = Math.min((elapsed / dur) * 100, 100);
+    const remain  = Math.max(Math.ceil(dur - elapsed), 0);
+    const progressEl = document.getElementById('preview-bar-progress');
+    const timeEl     = document.getElementById('preview-bar-time');
+    if (progressEl) progressEl.style.width = pct + '%';
+    if (timeEl) timeEl.textContent = '0:' + String(remain).padStart(2, '0');
+  });
+
+  audio.addEventListener('ended', () => stopPreview());
+  audio.addEventListener('error', () => {
+    stopPreview();
+    toast('Erro', 'Não foi possível carregar a prévia.');
+  });
+
+  audio.play().catch(() => {
+    stopPreview();
+    toast('Bloqueado', 'O navegador bloqueou o áudio. Tente novamente.');
+  });
+}
+
+function togglePreview() {
+  const audio = window._previewAudio;
+  if (!audio) return;
+  if (audio.paused) {
+    audio.play();
+    _setPreviewPlayState(true);
+    _updateDetailPreviewBtn(window._previewSongId, true);
+  } else {
+    audio.pause();
+    _setPreviewPlayState(false);
+    _updateDetailPreviewBtn(window._previewSongId, false);
+  }
+}
+
+function stopPreview(removeBar = true) {
+  if (window._previewAudio) {
+    window._previewAudio.pause();
+    window._previewAudio.src = '';
+    window._previewAudio = null;
+  }
+  clearTimeout(window._previewTimer);
+  _updateDetailPreviewBtn(window._previewSongId, false, true);
+  window._previewSongId = null;
+  if (removeBar) {
+    const bar = document.getElementById('preview-player-bar');
+    if (bar) bar.classList.remove('visible');
+  }
+}
+
+function _setPreviewPlayState(playing) {
+  const playIcon  = document.getElementById('preview-icon-play');
+  const pauseIcon = document.getElementById('preview-icon-pause');
+  const btn       = document.getElementById('preview-bar-play');
+  if (!playIcon || !pauseIcon) return;
+  playIcon.style.display  = playing ? 'none' : '';
+  pauseIcon.style.display = playing ? '' : 'none';
+  if (btn) btn.setAttribute('aria-label', playing ? 'Pausar' : 'Reproduzir');
+}
+
+// Atualiza o botão no detalhe da música
+function _updateDetailPreviewBtn(songId, playing, stopped = false) {
+  const btn = document.getElementById('detail-preview-btn');
+  if (!btn || !songId) return;
+  const s = songs.find(x => x.id === songId);
+  if (stopped) {
+    btn.innerHTML = _previewBtnInner('play');
+    btn.classList.remove('preview-btn-active');
+  } else if (playing) {
+    btn.innerHTML = _previewBtnInner('pause');
+    btn.classList.add('preview-btn-active');
+  } else {
+    btn.innerHTML = _previewBtnInner('play');
+    btn.classList.remove('preview-btn-active');
+  }
+}
+
+function _previewBtnInner(state) {
+  if (state === 'pause') {
+    return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg><span>Pausar</span>`;
+  }
+  return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg><span>Prévia</span>`;
+}
+
+
+// ─── BUSCA SILENCIOSA DE PREVIEW ──────────────────────────────
+// Cache de IDs já tentados nesta sessão, para não refazer buscas
+window._previewFetchAttempted = window._previewFetchAttempted || new Set();
+
+async function _fetchAndStorePreview(songId) {
+  // Não tenta mais de uma vez por sessão para o mesmo ID
+  if (window._previewFetchAttempted.has(songId)) return;
+  window._previewFetchAttempted.add(songId);
+
+  const s = songs.find(x => x.id === songId);
+  if (!s || s.previewUrl) return; // já tem ou sumiu
+
+  const query = [s.title, s.artist].filter(Boolean).join(' ');
+  if (!query.trim()) {
+    _setPreviewBtnUnavailable(songId);
+    return;
+  }
+
+  try {
+    const url  = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&limit=5&country=BR`;
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (!data.results || data.results.length === 0) {
+      _setPreviewBtnUnavailable(songId);
+      return;
+    }
+
+    // Tenta encontrar a melhor correspondência por título e artista normalizados
+    const normTitle  = _normPreview(s.title);
+    const normArtist = _normPreview(s.artist);
+
+    let best = null;
+    let bestScore = -1;
+
+    data.results.forEach(t => {
+      if (!t.previewUrl) return;
+      const tTitle  = _normPreview(t.trackName  || '');
+      const tArtist = _normPreview(t.artistName || '');
+      let score = 0;
+      if (tTitle  === normTitle)  score += 2;
+      else if (tTitle.includes(normTitle) || normTitle.includes(tTitle)) score += 1;
+      if (tArtist === normArtist) score += 2;
+      else if (tArtist.includes(normArtist) || normArtist.includes(tArtist)) score += 1;
+      if (score > bestScore) { bestScore = score; best = t; }
+    });
+
+    // Exige ao menos correspondência parcial em título OU artista
+    if (!best || bestScore < 1) {
+      _setPreviewBtnUnavailable(songId);
+      return;
+    }
+
+    // Salva a URL encontrada persistentemente
+    s.previewUrl = best.previewUrl;
+    // Aproveita para atualizar arte do iTunes se a música não tiver
+    if (!s.itunesArt && best.artworkUrl100) s.itunesArt = best.artworkUrl100;
+    save();
+
+    // Atualiza o botão na tela sem re-renderizar tudo
+    _setPreviewBtnReady(songId);
+
+  } catch {
+    _setPreviewBtnUnavailable(songId);
+  }
+}
+
+function _normPreview(str) {
+  return (str || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function _setPreviewBtnReady(songId) {
+  const btn = document.getElementById('detail-preview-btn');
+  // Só atualiza se ainda estamos no detalhe desta música
+  if (!btn) return;
+  btn.disabled = false;
+  btn.classList.remove('detail-preview-loading');
+  btn.setAttribute('onclick', `playPreview('${songId}')`);
+  btn.setAttribute('title', 'Ouvir prévia de 30s');
+  btn.innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    <span>Prévia</span>`;
+}
+
+function _setPreviewBtnUnavailable(songId) {
+  const btn = document.getElementById('detail-preview-btn');
+  if (!btn) return;
+  // Remove o botão discretamente — não há prévia disponível
+  btn.style.opacity = '0';
+  btn.style.pointerEvents = 'none';
+  setTimeout(() => btn?.remove(), 300);
 }

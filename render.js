@@ -377,8 +377,9 @@ function renderLibrary() {
       sortedArtists.map(a => {
         const count = songs.filter(s => s.artistId === a.id).length;
         return `<div class="artist-card" onclick="showArtist('${a.id}')">
-          ${a.img ? `<img class="artist-cover" src="${a.img}" alt="">` : `<div class="artist-cover-placeholder">🎤</div>`}
+          ${a.img ? `<img class="artist-cover${a.imgIsTemp ? ' artist-cover-temp' : ''}" src="${a.img}" alt="">` : `<div class="artist-cover-placeholder">🎤</div>`}
           <div class="artist-name">${a.name}</div>
+          ${a.imgIsTemp ? `<div class="artist-card-temp-badge">⚠ foto provisória</div>` : ''}
           <div class="artist-count">${count} música${count !== 1 ? 's' : ''}</div>
         </div>`;
       }).join('') + `</div>`;
@@ -387,8 +388,9 @@ function renderLibrary() {
       sortedArtists.slice(0, ARTIST_PREVIEW).map(a => {
         const count = songs.filter(s => s.artistId === a.id).length;
         return `<div class="artist-card" onclick="showArtist('${a.id}')">
-          ${a.img ? `<img class="artist-cover" src="${a.img}" alt="">` : `<div class="artist-cover-placeholder">🎤</div>`}
+          ${a.img ? `<img class="artist-cover${a.imgIsTemp ? ' artist-cover-temp' : ''}" src="${a.img}" alt="">` : `<div class="artist-cover-placeholder">🎤</div>`}
           <div class="artist-name">${a.name}</div>
+          ${a.imgIsTemp ? `<div class="artist-card-temp-badge">⚠ foto provisória</div>` : ''}
           <div class="artist-count">${count} música${count !== 1 ? 's' : ''}</div>
         </div>`;
       }).join('') + `</div>`;
@@ -576,6 +578,15 @@ function openDetail(id) {
         </div>
         <div class="detail-stars">${starsHTML(s.rating, 'detail-star')}</div>
         <div class="detail-actions">
+          ${s.previewUrl ? `
+          <button class="detail-icon-btn" id="detail-preview-btn" onclick="playPreview('${s.id}')" title="Ouvir prévia de 30s">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span>Prévia</span>
+          </button>` : `
+          <button class="detail-icon-btn detail-preview-loading" id="detail-preview-btn" disabled title="Buscando prévia…">
+            <span class="detail-preview-spinner"></span>
+            <span>Prévia</span>
+          </button>`}
           <button class="detail-icon-btn" onclick="editSong('${s.id}')" title="Editar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             <span>Editar</span>
@@ -632,6 +643,9 @@ function openDetail(id) {
       </div>`}
   `;
   navigate('detail');
+
+  // Busca prévia silenciosamente se a música não tiver URL salva
+  if (!s.previewUrl) _fetchAndStorePreview(s.id);
 }
 
 
