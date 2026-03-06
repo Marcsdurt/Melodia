@@ -30,20 +30,58 @@ function renderSettings() {
       <!-- APARÊNCIA -->
       <div class="settings-section">
         <div class="settings-section-title">🎨 Aparência</div>
-        <label class="settings-toggle-row" onclick="toggleDarkMode()">
-          <div>
-            <div class="settings-row-label">Modo escuro</div>
-            <div class="settings-row-sub">Alterna entre tema escuro e claro</div>
+        <div class="settings-theme-wrap">
+          <div class="settings-row-sub" style="padding:16px 20px 14px;border-bottom:1px solid var(--border)">Escolha o tema do sistema</div>
+          <div class="settings-theme-grid">
+
+            <!-- ESCURO -->
+            <div class="theme-card ${!isDark && !userProfile.y2kMode ? '' : isDark && !userProfile.y2kMode ? 'active' : ''}" onclick="setAppTheme('dark')">
+              <div class="theme-card-preview theme-preview-dark">
+                <div class="tp-topbar"><div class="tp-bar tp-bar-gold"></div><div class="tp-bar tp-bar-short"></div></div>
+                <div class="tp-sidebar"></div>
+                <div class="tp-content">
+                  <div class="tp-card"></div>
+                  <div class="tp-card"></div>
+                </div>
+              </div>
+              <div class="theme-card-label">
+                <span class="theme-card-check">✓</span> Escuro
+              </div>
+            </div>
+
+            <!-- CLARO -->
+            <div class="theme-card ${!isDark && !userProfile.y2kMode ? 'active' : ''}" onclick="setAppTheme('light')">
+              <div class="theme-card-preview theme-preview-light">
+                <div class="tp-topbar tp-topbar-light"><div class="tp-bar tp-bar-brown"></div><div class="tp-bar tp-bar-short"></div></div>
+                <div class="tp-sidebar tp-sidebar-light"></div>
+                <div class="tp-content">
+                  <div class="tp-card tp-card-light"></div>
+                  <div class="tp-card tp-card-light"></div>
+                </div>
+              </div>
+              <div class="theme-card-label">
+                <span class="theme-card-check">✓</span> Claro
+              </div>
+            </div>
+
+            <!-- Y2K -->
+            <div class="theme-card ${userProfile.y2kMode ? 'active' : ''}" onclick="setAppTheme('y2k')">
+              <div class="theme-card-preview theme-preview-y2k">
+                <div class="tp-topbar tp-topbar-y2k"><div class="tp-bar tp-bar-y2k"></div><div class="tp-bar tp-bar-short tp-bar-y2k"></div></div>
+                <div class="tp-sidebar tp-sidebar-y2k"></div>
+                <div class="tp-content">
+                  <div class="tp-card tp-card-y2k"></div>
+                  <div class="tp-card tp-card-y2k"></div>
+                </div>
+                <div class="tp-taskbar-y2k"></div>
+              </div>
+              <div class="theme-card-label">
+                <span class="theme-card-check">✓</span> Y2K
+              </div>
+            </div>
+
           </div>
-          <div class="settings-toggle ${isDark ? 'on' : ''}" id="toggle-dark"></div>
-        </label>
-        <label class="settings-toggle-row" onclick="toggleY2KMode()">
-          <div>
-            <div class="settings-row-label">🌐 Modo Y2K Webcore</div>
-            <div class="settings-row-sub">Interface estilo Windows XP / internet dos anos 2000</div>
-          </div>
-          <div class="settings-toggle ${userProfile.y2kMode ? 'on' : ''}" id="toggle-y2k"></div>
-        </label>
+        </div>
       </div>
 
       <!-- ACESSIBILIDADE -->
@@ -129,19 +167,35 @@ function handleAvatarUpload(event) {
   reader.readAsDataURL(file);
 }
 
+function setAppTheme(theme) {
+  if (theme === 'dark') {
+    userProfile.darkMode = true;
+    userProfile.y2kMode  = false;
+  } else if (theme === 'light') {
+    userProfile.darkMode = false;
+    userProfile.y2kMode  = false;
+  } else if (theme === 'y2k') {
+    userProfile.darkMode = false;
+    userProfile.y2kMode  = true;
+  }
+  saveProfile();
+  applyTheme();
+  applyY2KMode();
+  // Atualiza os cards sem re-renderizar a página toda
+  document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+  const map = { dark: 0, light: 1, y2k: 2 };
+  const cards = document.querySelectorAll('.theme-card');
+  if (cards[map[theme]]) cards[map[theme]].classList.add('active');
+}
+
 function toggleDarkMode() {
   userProfile.darkMode = !userProfile.darkMode;
-  // Desativa Y2K ao mudar dark mode
   if (userProfile.y2kMode) {
     userProfile.y2kMode = false;
     applyY2KMode();
   }
   saveProfile();
   applyTheme();
-  const tog = document.getElementById('toggle-dark');
-  if (tog) tog.classList.toggle('on', userProfile.darkMode);
-  const togY2K = document.getElementById('toggle-y2k');
-  if (togY2K) togY2K.classList.remove('on');
 }
 
 function applyTheme() {
