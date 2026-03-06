@@ -200,15 +200,45 @@ function toggleDarkMode() {
 
 function applyTheme() {
   const isDark = userProfile.darkMode !== false;
-  document.documentElement.style.setProperty('--bg',          isDark ? '#0e0c09' : '#f5f0e8');
-  document.documentElement.style.setProperty('--bg2',         isDark ? '#161410' : '#ede8de');
-  document.documentElement.style.setProperty('--bg3',         isDark ? '#1e1b16' : '#e5e0d5');
-  document.documentElement.style.setProperty('--surface',     isDark ? '#242018' : '#ddd8cc');
-  document.documentElement.style.setProperty('--surface2',    isDark ? '#2c2820' : '#d5d0c4');
-  document.documentElement.style.setProperty('--border',      isDark ? '#3a3428' : '#c0b8a8');
-  document.documentElement.style.setProperty('--cream',       isDark ? '#f0e8d8' : '#1a160f');
-  document.documentElement.style.setProperty('--cream-dim',   isDark ? 'rgba(240,232,216,0.55)' : 'rgba(26,22,15,0.6)');
-  document.documentElement.style.setProperty('--cream-faint', isDark ? 'rgba(240,232,216,0.18)' : 'rgba(26,22,15,0.22)');
+  const isY2K  = userProfile.y2kMode === true;
+
+  const bg          = isDark ? '#0e0c09' : '#ffffff';
+  const bg2         = isDark ? '#161410' : '#f7f7f7';
+  const bg3         = isDark ? '#1e1b16' : '#f0f0f0';
+  const surface     = isDark ? '#242018' : '#e8e8e8';
+  const surface2    = isDark ? '#2c2820' : '#dcdcdc';
+  const border      = isDark ? '#3a3428' : '#e0e0e0';
+  const gold        = isDark ? '#c9a84c' : '#b8860b';
+  const gold2       = isDark ? '#e8c97a' : '#c9a84c';
+  const goldDim     = isDark ? 'rgba(201,168,76,0.12)' : 'rgba(184,134,11,0.1)';
+  const cream       = isDark ? '#f0e8d8' : '#1a1a1a';
+  const creamDim    = isDark ? 'rgba(240,232,216,0.55)' : 'rgba(0,0,0,0.55)';
+  const creamFaint  = isDark ? 'rgba(240,232,216,0.18)' : 'rgba(0,0,0,0.22)';
+
+  const root = document.documentElement;
+  root.style.setProperty('--bg',           bg);
+  root.style.setProperty('--bg2',          bg2);
+  root.style.setProperty('--bg3',          bg3);
+  root.style.setProperty('--surface',      surface);
+  root.style.setProperty('--surface2',     surface2);
+  root.style.setProperty('--border',       border);
+  root.style.setProperty('--gold',         gold);
+  root.style.setProperty('--gold2',        gold2);
+  root.style.setProperty('--gold-dim',     goldDim);
+  root.style.setProperty('--cream',        cream);
+  root.style.setProperty('--cream-dim',    creamDim);
+  root.style.setProperty('--cream-faint',  creamFaint);
+
+  // Força o bg no html e body diretamente para evitar fundo residual
+  if (!isY2K) {
+    root.style.background        = bg;
+    document.body.style.background = bg;
+  } else {
+    root.style.background        = '';
+    document.body.style.background = '';
+  }
+
+  document.body.classList.toggle('theme-light', !isDark && !isY2K);
 }
 
 function applyFontSize(val) {
