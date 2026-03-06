@@ -7,7 +7,7 @@ let shareShowUser      = false;
 const SHARE_THEMES = {
   dark:  { bg: '#0e0c09', bg2: '#1a1713', accent: '#c9a84c', accent2: '#e8c97a', text: '#f0e8d8', textDim: 'rgba(240,232,216,0.6)', border: 'rgba(58,52,40,0.8)', tag: 'rgba(201,168,76,0.15)', watermark: 'rgba(240,232,216,0.12)' },
   gold:  { bg: '#2a1f00', bg2: '#1a1200', accent: '#e8c97a', accent2: '#fff0b0', text: '#fff8e0', textDim: 'rgba(255,248,224,0.7)', border: 'rgba(232,201,122,0.3)', tag: 'rgba(232,201,122,0.2)', watermark: 'rgba(255,255,255,0.1)' },
-  light: { bg: '#f5f0e8', bg2: '#ede6d8', accent: '#8a6820', accent2: '#6a4e10', text: '#1a160f', textDim: 'rgba(26,22,15,0.55)', border: 'rgba(26,22,15,0.12)', tag: 'rgba(138,104,32,0.12)', watermark: 'rgba(26,22,15,0.07)' },
+  ocean: { bg: '#0a3d5c', bg2: '#0d4a6b', accent: '#4db8d4', accent2: '#7dd4e8', text: '#ffffff', textDim: 'rgba(255,255,255,0.65)', border: 'rgba(77,184,212,0.3)', tag: 'rgba(77,184,212,0.18)', watermark: 'rgba(255,255,255,0.08)' },
   night: { bg: '#060612', bg2: '#0d0d22', accent: '#7878ff', accent2: '#aaaaff', text: '#e8e8ff', textDim: 'rgba(232,232,255,0.55)', border: 'rgba(96,96,200,0.3)', tag: 'rgba(120,120,255,0.15)', watermark: 'rgba(232,232,255,0.08)' },
   y2k:   { isY2K: true },
 };
@@ -211,10 +211,18 @@ async function drawStorie() {
 
   // ── BACKGROUND ──
   const bgGrad = ctx.createLinearGradient(0, 0, W, H);
-  bgGrad.addColorStop(0,   T.bg2);
-  bgGrad.addColorStop(0.4, T.bg);
-  bgGrad.addColorStop(0.8, T.bg2);
-  bgGrad.addColorStop(1,   T.bg);
+  if (shareTheme === 'ocean') {
+    bgGrad.addColorStop(0,   '#0d4a6b');
+    bgGrad.addColorStop(0.3, '#0a3d5c');
+    bgGrad.addColorStop(0.6, '#072d44');
+    bgGrad.addColorStop(0.85,'#0a3d5c');
+    bgGrad.addColorStop(1,   '#051f30');
+  } else {
+    bgGrad.addColorStop(0,   T.bg2);
+    bgGrad.addColorStop(0.4, T.bg);
+    bgGrad.addColorStop(0.8, T.bg2);
+    bgGrad.addColorStop(1,   T.bg);
+  }
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
@@ -222,7 +230,7 @@ async function drawStorie() {
   ctx.save();
   ctx.globalAlpha = 0.018;
   for (let i = 0; i < 5000; i++) {
-    ctx.fillStyle = shareTheme === 'light' ? '#000' : '#fff';
+    ctx.fillStyle = '#fff';
     ctx.fillRect(Math.random() * W, Math.random() * H, 1.5, 1.5);
   }
   ctx.restore();
@@ -467,7 +475,7 @@ async function drawStorie() {
     tags.forEach((label, i) => {
       const tw = tagWidths[i];
       roundRect(ctx, tx, cur, tw, TAG_H, TAG_R);
-      ctx.fillStyle = shareTheme === 'light' ? 'rgba(0,0,0,0.04)' : 'rgba(0,0,0,0.28)';
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
       ctx.fill();
       ctx.strokeStyle = T.accent + '66'; ctx.lineWidth = 1;
       roundRect(ctx, tx, cur, tw, TAG_H, TAG_R);
