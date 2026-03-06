@@ -555,7 +555,7 @@ async function drawStorie() {
 
       ctx.save();
       roundRect(ctx, VERSE_COL_X, vy - 14, VERSE_BLOCK_W, blockH + 28, 12);
-      ctx.fillStyle = shareTheme === 'light' ? 'rgba(0,0,0,0.055)' : 'rgba(255,255,255,0.065)';
+      ctx.fillStyle = shareTheme === 'ocean' ? 'rgba(255,255,255,0.065)' : 'rgba(255,255,255,0.065)';
       ctx.fill();
       ctx.restore();
 
@@ -634,7 +634,7 @@ async function drawStorie() {
 
     ctx.save();
     roundRect(ctx, pillXOpt, pillY, PILL_W_OPT, PILL_H, PILL_H / 2);
-    ctx.fillStyle = shareTheme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.06)';
+    ctx.fillStyle = shareTheme === 'ocean' ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.06)';
     ctx.fill();
     ctx.strokeStyle = T.accent;
     ctx.globalAlpha = 0.18;

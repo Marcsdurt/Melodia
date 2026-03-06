@@ -35,7 +35,7 @@ function renderSettings() {
           <div class="settings-theme-grid">
 
             <!-- ESCURO -->
-            <div class="theme-card ${!isDark && !userProfile.y2kMode ? '' : isDark && !userProfile.y2kMode ? 'active' : ''}" onclick="setAppTheme('dark')">
+            <div class="theme-card ${isDark && !userProfile.y2kMode ? 'active' : ''}" onclick="setAppTheme('dark')">
               <div class="theme-card-preview theme-preview-dark">
                 <div class="tp-topbar"><div class="tp-bar tp-bar-gold"></div><div class="tp-bar tp-bar-short"></div></div>
                 <div class="tp-sidebar"></div>
@@ -87,14 +87,14 @@ function renderSettings() {
       <!-- ACESSIBILIDADE -->
       <div class="settings-section">
         <div class="settings-section-title">♿ Acessibilidade</div>
-        <div class="settings-row-label" style="margin-bottom:14px;padding:0 20px">Tamanho do texto</div>
+        <div class="settings-row-label" style="margin-bottom:14px;padding:0 20px">Tamanho dos elementos</div>
         <div class="settings-font-row">
-          <span style="font-size:12px;color:var(--cream-dim)">A</span>
+          <span style="font-size:9px;color:var(--cream-dim)">■</span>
           <input type="range" id="font-slider" min="85" max="130" step="5" value="${fontSize}"
             oninput="applyFontSize(this.value)" class="settings-slider">
-          <span style="font-size:20px;color:var(--cream-dim)">A</span>
+          <span style="font-size:18px;color:var(--cream-dim)">■</span>
         </div>
-        <div style="text-align:center;font-size:12px;color:var(--cream-faint);margin-top:6px;padding-bottom:16px">${fontSize}% do tamanho original</div>
+        <div class="settings-font-label" style="text-align:center;font-size:12px;color:var(--cream-faint);margin-top:6px;padding-bottom:16px">${fontSize}% do tamanho original</div>
       </div>
 
       <!-- DADOS -->
@@ -190,10 +190,7 @@ function setAppTheme(theme) {
 
 function toggleDarkMode() {
   userProfile.darkMode = !userProfile.darkMode;
-  if (userProfile.y2kMode) {
-    userProfile.y2kMode = false;
-    applyY2KMode();
-  }
+  if (userProfile.y2kMode) { userProfile.y2kMode = false; applyY2KMode(); }
   saveProfile();
   applyTheme();
 }
@@ -201,55 +198,60 @@ function toggleDarkMode() {
 function applyTheme() {
   const isDark = userProfile.darkMode !== false;
   const isY2K  = userProfile.y2kMode === true;
-
-  const bg          = isDark ? '#0e0c09' : '#ffffff';
-  const bg2         = isDark ? '#161410' : '#f7f7f7';
-  const bg3         = isDark ? '#1e1b16' : '#f0f0f0';
-  const surface     = isDark ? '#242018' : '#e8e8e8';
-  const surface2    = isDark ? '#2c2820' : '#dcdcdc';
-  const border      = isDark ? '#3a3428' : '#e0e0e0';
-  const gold        = isDark ? '#c9a84c' : '#b8860b';
-  const gold2       = isDark ? '#e8c97a' : '#c9a84c';
-  const goldDim     = isDark ? 'rgba(201,168,76,0.12)' : 'rgba(184,134,11,0.1)';
-  const cream       = isDark ? '#f0e8d8' : '#1a1a1a';
-  const creamDim    = isDark ? 'rgba(240,232,216,0.55)' : 'rgba(0,0,0,0.55)';
-  const creamFaint  = isDark ? 'rgba(240,232,216,0.18)' : 'rgba(0,0,0,0.22)';
-
-  const root = document.documentElement;
-  root.style.setProperty('--bg',           bg);
-  root.style.setProperty('--bg2',          bg2);
-  root.style.setProperty('--bg3',          bg3);
-  root.style.setProperty('--surface',      surface);
-  root.style.setProperty('--surface2',     surface2);
-  root.style.setProperty('--border',       border);
-  root.style.setProperty('--gold',         gold);
-  root.style.setProperty('--gold2',        gold2);
-  root.style.setProperty('--gold-dim',     goldDim);
-  root.style.setProperty('--cream',        cream);
-  root.style.setProperty('--cream-dim',    creamDim);
-  root.style.setProperty('--cream-faint',  creamFaint);
-
-  // Força o bg no html e body diretamente para evitar fundo residual
+  const bg         = isDark ? '#0e0c09' : '#ffffff';
+  const bg2        = isDark ? '#161410' : '#f7f7f7';
+  const bg3        = isDark ? '#1e1b16' : '#f0f0f0';
+  const surface    = isDark ? '#242018' : '#e8e8e8';
+  const surface2   = isDark ? '#2c2820' : '#dcdcdc';
+  const border     = isDark ? '#3a3428' : '#e0e0e0';
+  const gold       = isDark ? '#c9a84c' : '#b8860b';
+  const gold2      = isDark ? '#e8c97a' : '#c9a84c';
+  const goldDim    = isDark ? 'rgba(201,168,76,0.12)' : 'rgba(184,134,11,0.1)';
+  const cream      = isDark ? '#f0e8d8' : '#1a1a1a';
+  const creamDim   = isDark ? 'rgba(240,232,216,0.55)' : 'rgba(0,0,0,0.55)';
+  const creamFaint = isDark ? 'rgba(240,232,216,0.18)' : 'rgba(0,0,0,0.22)';
+  const r = document.documentElement;
+  r.style.setProperty('--bg',           bg);
+  r.style.setProperty('--bg2',          bg2);
+  r.style.setProperty('--bg3',          bg3);
+  r.style.setProperty('--surface',      surface);
+  r.style.setProperty('--surface2',     surface2);
+  r.style.setProperty('--border',       border);
+  r.style.setProperty('--gold',         gold);
+  r.style.setProperty('--gold2',        gold2);
+  r.style.setProperty('--gold-dim',     goldDim);
+  r.style.setProperty('--cream',        cream);
+  r.style.setProperty('--cream-dim',    creamDim);
+  r.style.setProperty('--cream-faint',  creamFaint);
+  // Força o fundo no html e body para cobrir qualquer área transparente
   if (!isY2K) {
-    root.style.background        = bg;
-    document.body.style.background = bg;
+    r.style.background              = bg;
+    document.body.style.background  = bg;
   } else {
-    root.style.background        = '';
-    document.body.style.background = '';
+    r.style.background              = '';
+    document.body.style.background  = '';
   }
-
   document.body.classList.toggle('theme-light', !isDark && !isY2K);
 }
 
 function applyFontSize(val) {
   userProfile.fontSize = parseInt(val);
   saveProfile();
-  document.documentElement.style.fontSize = (val / 100 * 16) + 'px';
-  const slider = document.getElementById('font-slider');
-  if (slider) {
-    const label = slider.parentElement.nextElementSibling;
-    if (label) label.textContent = val + '% do tamanho original';
-  }
+  const scale = val / 100;
+  const main    = document.querySelector('.main');
+  const sidebar = document.querySelector('.sidebar');
+  const isFF    = navigator.userAgent.toLowerCase().includes('firefox');
+  [main, sidebar].forEach(el => {
+    if (!el) return;
+    if (isFF) {
+      el.style.transform       = `scale(${scale})`;
+      el.style.transformOrigin = 'top left';
+    } else {
+      el.style.zoom = scale;
+    }
+  });
+  const label = document.querySelector('.settings-font-label');
+  if (label) label.textContent = val + '% do tamanho original';
 }
 
 function exportData() {
@@ -304,14 +306,15 @@ function confirmResetAll() {
   if (confirm('Resetar TUDO? Músicas, playlists e perfil serão apagados. Esta ação é irreversível.')) {
     songs       = [];
     playlists   = [];
-    userProfile = { name: '', avatar: '', darkMode: true, fontSize: 100 };
+    userProfile = { name: '', avatar: '', darkMode: true, y2kMode: false, fontSize: 100 };
     save();
     saveProfile();
     applyTheme();
+    applyY2KMode();
     applyFontSize(100);
     updateSidebarUser();
     renderView('feed');
-navigate('feed');
+    navigate('feed');
     toast('Resetado', 'O Melodia foi reiniciado do zero.');
   }
 }
